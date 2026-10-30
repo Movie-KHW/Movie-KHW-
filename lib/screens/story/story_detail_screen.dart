@@ -122,8 +122,8 @@ class StoryDetailScreen extends StatelessWidget {
       icon = Icons.cancel_outlined;
       title = 'Status: Cerita Ditolak';
       desc = story.moderationNote != null && story.moderationNote!.isNotEmpty
-          ? 'Alasan penolakan: ${story.moderationNote}\nSilakan perbaiki cerita ini dan ajukan ulang.'
-          : 'Cerita ini belum memenuhi pedoman komunitas. Silakan perbaiki dan ajukan ulang.';
+          ? 'Alasan penolakan: ${story.moderationNote}\nCerita yang sudah ditinjau tidak dapat diedit atau diajukan ulang.'
+          : 'Cerita ini belum memenuhi pedoman komunitas dan tidak dapat diedit atau diajukan ulang.';
     } else {
       bgColor = AppColors.success.withValues(alpha: 0.12);
       borderColor = AppColors.success;
@@ -180,7 +180,7 @@ class StoryDetailScreen extends StatelessWidget {
     final authProvider = Provider.of<AuthProvider>(context);
     final currentUserId = authProvider.firebaseUser?.uid;
     final bool isAuthor = currentUserId != null && currentUserId == story.authorId;
-    final bool canManage = isAuthor || authProvider.isAdmin;
+    final canEditOrDelete = isAuthor && story.isPending;
 
     return Scaffold(
       backgroundColor: AppColors.background,
@@ -188,7 +188,7 @@ class StoryDetailScreen extends StatelessWidget {
         title: const Text('Detail Cerita'),
         backgroundColor: AppColors.surface,
         actions: [
-          if (canManage)
+          if (canEditOrDelete)
             PopupMenuButton<String>(
               icon: const Icon(Icons.more_vert, color: AppColors.textPrimary),
               color: AppColors.surface,
@@ -205,16 +205,15 @@ class StoryDetailScreen extends StatelessWidget {
                 }
               },
               itemBuilder: (context) => [
-                if (isAuthor)
-                  PopupMenuItem(
+                PopupMenuItem(
                     value: 'edit',
                     child: Row(
                       children: [
                         const Icon(Icons.edit, size: 18, color: AppColors.primaryLight),
                         const SizedBox(width: 10),
-                        Text(
-                          story.isRejected ? 'Edit & Ajukan Ulang' : 'Edit Cerita',
-                          style: const TextStyle(color: AppColors.textPrimary),
+                        const Text(
+                          'Edit Cerita',
+                          style: TextStyle(color: AppColors.textPrimary),
                         ),
                       ],
                     ),
@@ -407,7 +406,7 @@ class StoryDetailScreen extends StatelessWidget {
                   const SizedBox(height: 40),
 
                   // Tombol Tindakan untuk Penulis
-                  if (isAuthor) ...[
+                  if (canEditOrDelete) ...[
                     Row(
                       children: [
                         Expanded(
@@ -421,9 +420,7 @@ class StoryDetailScreen extends StatelessWidget {
                               );
                             },
                             icon: const Icon(Icons.edit, size: 18),
-                            label: Text(
-                              story.isRejected ? 'Edit & Ajukan Ulang' : 'Edit Cerita',
-                            ),
+                            label: const Text('Edit Cerita'),
                             style: ElevatedButton.styleFrom(
                               backgroundColor: AppColors.primary,
                               foregroundColor: AppColors.textPrimary,
