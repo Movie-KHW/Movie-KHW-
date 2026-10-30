@@ -1,7 +1,6 @@
 // ===== IMPORT LIBRARY =====
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import '../models/story_model.dart';
 import '../services/firestore_service.dart';
 import '../services/storage_service.dart';
@@ -17,10 +16,8 @@ class StoryProvider extends ChangeNotifier {
   List<StoryModel> _userStories = [];
   List<StoryModel> _moderationStories = [];
   List<StoryModel> _pendingModerationStories = [];
-  final Map<String, double> _storyImageUploads = {};
   StoryModel? _selectedStory;
   String? _userStoriesUid;
-  String? _storyImageUploadError;
 
   // Filter kategori cerita publik
   String _selectedCategory = 'Semua';
@@ -35,6 +32,7 @@ class StoryProvider extends ChangeNotifier {
   bool _isActionLoading = false;
   String? _errorMessage;
   String? _actionSuccessMessage;
+  int _userStoriesStreamGeneration = 0;
 
   // Subscription stream Firestore
   StreamSubscription<List<StoryModel>>? _publicStoriesSubscription;
@@ -62,12 +60,6 @@ class StoryProvider extends ChangeNotifier {
   bool get isLoadingUserStories => _isLoadingUserStories;
   bool get isModerationLoading => _isModerationLoading;
   bool get isActionLoading => _isActionLoading;
-  bool get isStoryImageUploading => _storyImageUploads.isNotEmpty;
-  double get storyImageUploadProgress => _storyImageUploads.isEmpty
-      ? 0
-      : _storyImageUploads.values.reduce((a, b) => a + b) /
-            _storyImageUploads.length;
-  String? get storyImageUploadError => _storyImageUploadError;
   String? get errorMessage => _errorMessage;
   String? get actionSuccessMessage => _actionSuccessMessage;
 
@@ -137,28 +129,36 @@ class StoryProvider extends ChangeNotifier {
   }
 
   // Menginisialisasi stream cerita milik pengguna yang sedang login
-  void initUserStoriesStream(String uid) {
+  void initUserStoriesStream(String uid, {bool restart = false}) {
     if (uid.isEmpty) return;
-    if (_userStoriesUid == uid && _userStoriesSubscription != null) return;
+    if (!restart &&
+        _userStoriesUid == uid &&
+        _userStoriesSubscription != null) {
+      return;
+    }
 
+    final generation = ++_userStoriesStreamGeneration;
     _userStoriesUid = uid;
-    _userStories = [];
     _isLoadingUserStories = true;
     _userStoriesSubscription?.cancel();
+    _userStoriesSubscription = null;
     notifyListeners();
     _userStoriesSubscription = _firestoreService
         .getUserStoriesStream(uid)
         .listen(
           (stories) {
-            if (_userStoriesUid != uid) return;
+            if (_userStoriesStreamGeneration != generation) return;
             _userStories = stories;
             _isLoadingUserStories = false;
             _errorMessage = null;
             notifyListeners();
           },
           onError: (error) {
-            if (_userStoriesUid != uid) return;
+            if (_userStoriesStreamGeneration != generation) return;
+            unawaited(_userStoriesSubscription?.cancel());
             _isLoadingUserStories = false;
+            _userStoriesUid = null;
+            _userStoriesSubscription = null;
             _errorMessage = 'Gagal memuat cerita Anda: $error';
             notifyListeners();
           },
@@ -245,7 +245,9 @@ class StoryProvider extends ChangeNotifier {
     if (uid.isEmpty) return;
     try {
       final stories = await _firestoreService.getUserStories(uid);
-      _userStories = stories;
+      if (_userStoriesUid == uid) {
+        _userStories = stories;
+      }
       notifyListeners();
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
@@ -290,7 +292,6 @@ class StoryProvider extends ChangeNotifier {
     required String content,
     required String category,
     String? location,
-    XFile? imageFile,
     required String authorId,
     required String authorName,
   }) async {
@@ -298,18 +299,6 @@ class StoryProvider extends ChangeNotifier {
     _clearMessages();
 
     try {
-      // 1. Validasi foto jika ada
-      if (imageFile != null) {
-        final validationError = await _storageService.validateImageFile(
-          imageFile,
-        );
-        if (validationError != null) {
-          _errorMessage = validationError;
-          _setActionLoading(false);
-          return false;
-        }
-      }
-
       final storyId = _firestoreService.generateStoryId();
       await _firestoreService.createStory(
         storyId: storyId,
@@ -324,61 +313,11 @@ class StoryProvider extends ChangeNotifier {
       _actionSuccessMessage =
           'Cerita berhasil dikirim! Menunggu pemeriksaan dari admin (pending).';
       _setActionLoading(false);
-
-      if (imageFile != null) {
-        _storyImageUploadError = null;
-        unawaited(
-          _uploadStoryImageInBackground(
-            file: imageFile,
-            uid: authorId,
-            storyId: storyId,
-          ),
-        );
-      }
       return true;
     } catch (e) {
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       _setActionLoading(false);
       return false;
-    }
-  }
-
-  Future<void> _uploadStoryImageInBackground({
-    required XFile file,
-    required String uid,
-    required String storyId,
-  }) async {
-    _storyImageUploads[storyId] = 0;
-    notifyListeners();
-
-    try {
-      final uploadResult = await _storageService.uploadStoryImage(
-        file: file,
-        uid: uid,
-        storyId: storyId,
-        onProgress: (progress) {
-          final previousPercent = ((_storyImageUploads[storyId] ?? 0) * 100)
-              .floor();
-          final currentPercent = (progress * 100).floor();
-          if (currentPercent == previousPercent && progress < 1) return;
-
-          _storyImageUploads[storyId] = progress;
-          notifyListeners();
-        },
-      );
-      await _firestoreService.updateStoryImage(
-        storyId: storyId,
-        authorId: uid,
-        imageUrl: uploadResult['imageUrl']!,
-        imagePath: uploadResult['imagePath']!,
-      );
-    } catch (e) {
-      _storyImageUploadError =
-          'Cerita tersimpan, tetapi foto gagal diunggah. Edit cerita untuk mencoba lagi.';
-      debugPrint('Gagal mengunggah foto untuk cerita $storyId: $e');
-    } finally {
-      _storyImageUploads.remove(storyId);
-      notifyListeners();
     }
   }
 
@@ -411,7 +350,7 @@ class StoryProvider extends ChangeNotifier {
   }
 
   // ===== MEMPERBARUI CERITA =====
-  // Mendukung pengajuan ulang cerita yang ditolak (rejected) menjadi pending
+  // Hanya cerita yang masih pending yang dapat diperbarui.
   Future<bool> updateStory({
     required String storyId,
     required String authorId,
@@ -419,53 +358,11 @@ class StoryProvider extends ChangeNotifier {
     required String content,
     required String category,
     String? location,
-    XFile? newImageFile,
-    bool removeCurrentImage = false,
-    String? existingImageUrl,
-    String? existingImagePath,
   }) async {
     _setActionLoading(true);
     _clearMessages();
 
     try {
-      String? finalImageUrl = existingImageUrl;
-      String? finalImagePath = existingImagePath;
-
-      // 1. Jika pengguna meminta menghapus foto lama tanpa mengganti baru
-      if (removeCurrentImage && existingImagePath != null) {
-        await _storageService.deleteStoryImage(existingImagePath);
-        finalImageUrl = null;
-        finalImagePath = null;
-      }
-
-      // 2. Jika ada foto baru yang dipilih
-      if (newImageFile != null) {
-        final validationError = await _storageService.validateImageFile(
-          newImageFile,
-        );
-        if (validationError != null) {
-          _errorMessage = validationError;
-          _setActionLoading(false);
-          return false;
-        }
-
-        // Hapus foto lama di storage jika ada
-        if (existingImagePath != null && existingImagePath.isNotEmpty) {
-          await _storageService.deleteStoryImage(existingImagePath);
-        }
-
-        // Unggah foto baru
-        final uploadResult = await _storageService.uploadStoryImage(
-          file: newImageFile,
-          uid: authorId,
-          storyId: storyId,
-        );
-
-        finalImageUrl = uploadResult['imageUrl'];
-        finalImagePath = uploadResult['imagePath'];
-      }
-
-      // 3. Perbarui dokumen di Firestore (status akan di-reset ke pending secara otomatis)
       await _firestoreService.updateStory(
         storyId: storyId,
         authorId: authorId,
@@ -473,12 +370,10 @@ class StoryProvider extends ChangeNotifier {
         content: content,
         category: category,
         location: location,
-        imageUrl: finalImageUrl,
-        imagePath: finalImagePath,
       );
 
       _actionSuccessMessage =
-          'Cerita berhasil diperbarui dan diajukan ulang ke moderasi admin.';
+          'Perubahan cerita berhasil disimpan dan menunggu moderasi admin.';
       _setActionLoading(false);
       return true;
     } catch (e) {
