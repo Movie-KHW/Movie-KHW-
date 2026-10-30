@@ -8,24 +8,17 @@ import 'providers/story_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/app_constants.dart';
-
-// Catatan Firebase Options:
-// Setelah menjalankan perintah `flutterfire configure`, file `firebase_options.dart`
-// akan dihasilkan di direktori `lib/`. Impor file tersebut dan gunakan:
-// import 'firebase_options.dart';
-// await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+import 'firebase_options.dart';
 
 // ===== INISIALISASI APLIKASI =====
 void main() async {
   // Memastikan binding framework Flutter telah siap sebelum pemanggilan asinkron
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Firebase Core
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('Catatan inisialisasi Firebase: $e');
-  }
+  // Inisialisasi Firebase Core dengan konfigurasi khwmovie-8f74c
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const KHWMovieApp());
 }

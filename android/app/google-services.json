@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "112389714359",
+    "project_id": "khwmovie-8f74c",
+    "storage_bucket": "khwmovie-8f74c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:112389714359:android:94049d47748ffa0d353832",
+        "android_client_info": {
+          "package_name": "com.example.khw_movie"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA2J0rC2Dovsm4ZgtrrNL98cggBJHxj3Qg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
