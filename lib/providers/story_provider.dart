@@ -17,8 +17,10 @@ class StoryProvider extends ChangeNotifier {
   List<StoryModel> _userStories = [];
   List<StoryModel> _moderationStories = [];
   List<StoryModel> _pendingModerationStories = [];
+  final Map<String, double> _storyImageUploads = {};
   StoryModel? _selectedStory;
   String? _userStoriesUid;
+  String? _storyImageUploadError;
 
   // Filter kategori cerita publik
   String _selectedCategory = 'Semua';
@@ -60,6 +62,12 @@ class StoryProvider extends ChangeNotifier {
   bool get isLoadingUserStories => _isLoadingUserStories;
   bool get isModerationLoading => _isModerationLoading;
   bool get isActionLoading => _isActionLoading;
+  bool get isStoryImageUploading => _storyImageUploads.isNotEmpty;
+  double get storyImageUploadProgress => _storyImageUploads.isEmpty
+      ? 0
+      : _storyImageUploads.values.reduce((a, b) => a + b) /
+            _storyImageUploads.length;
+  String? get storyImageUploadError => _storyImageUploadError;
   String? get errorMessage => _errorMessage;
   String? get actionSuccessMessage => _actionSuccessMessage;
 
@@ -288,7 +296,6 @@ class StoryProvider extends ChangeNotifier {
   }) async {
     _setActionLoading(true);
     _clearMessages();
-    String? uploadedImagePath;
 
     try {
       // 1. Validasi foto jika ada
@@ -304,48 +311,74 @@ class StoryProvider extends ChangeNotifier {
       }
 
       final storyId = _firestoreService.generateStoryId();
-      Map<String, String>? uploadResult;
-      var imageUploadFailed = false;
-      if (imageFile != null) {
-        try {
-          uploadResult = await _storageService.uploadStoryImage(
-            file: imageFile,
-            uid: authorId,
-            storyId: storyId,
-          );
-          uploadedImagePath = uploadResult['imagePath'];
-        } catch (storageError) {
-          debugPrint(
-            'Peringatan: Gagal unggah foto saat tambah cerita: $storageError',
-          );
-          imageUploadFailed = true;
-        }
-      }
-
       await _firestoreService.createStory(
         storyId: storyId,
         title: title,
         content: content,
         category: category,
         location: location,
-        imageUrl: uploadResult?['imageUrl'],
-        imagePath: uploadResult?['imagePath'],
         authorId: authorId,
         authorName: authorName,
       );
 
-      _actionSuccessMessage = imageUploadFailed
-          ? 'Cerita tersimpan, namun foto gagal diunggah. Menunggu moderasi admin.'
-          : 'Cerita berhasil dikirim! Menunggu pemeriksaan dari admin (pending).';
+      _actionSuccessMessage =
+          'Cerita berhasil dikirim! Menunggu pemeriksaan dari admin (pending).';
       _setActionLoading(false);
+
+      if (imageFile != null) {
+        _storyImageUploadError = null;
+        unawaited(
+          _uploadStoryImageInBackground(
+            file: imageFile,
+            uid: authorId,
+            storyId: storyId,
+          ),
+        );
+      }
       return true;
     } catch (e) {
-      if (uploadedImagePath != null) {
-        await _storageService.deleteStoryImage(uploadedImagePath);
-      }
       _errorMessage = e.toString().replaceAll('Exception: ', '');
       _setActionLoading(false);
       return false;
+    }
+  }
+
+  Future<void> _uploadStoryImageInBackground({
+    required XFile file,
+    required String uid,
+    required String storyId,
+  }) async {
+    _storyImageUploads[storyId] = 0;
+    notifyListeners();
+
+    try {
+      final uploadResult = await _storageService.uploadStoryImage(
+        file: file,
+        uid: uid,
+        storyId: storyId,
+        onProgress: (progress) {
+          final previousPercent = ((_storyImageUploads[storyId] ?? 0) * 100)
+              .floor();
+          final currentPercent = (progress * 100).floor();
+          if (currentPercent == previousPercent && progress < 1) return;
+
+          _storyImageUploads[storyId] = progress;
+          notifyListeners();
+        },
+      );
+      await _firestoreService.updateStoryImage(
+        storyId: storyId,
+        authorId: uid,
+        imageUrl: uploadResult['imageUrl']!,
+        imagePath: uploadResult['imagePath']!,
+      );
+    } catch (e) {
+      _storyImageUploadError =
+          'Cerita tersimpan, tetapi foto gagal diunggah. Edit cerita untuk mencoba lagi.';
+      debugPrint('Gagal mengunggah foto untuk cerita $storyId: $e');
+    } finally {
+      _storyImageUploads.remove(storyId);
+      notifyListeners();
     }
   }
 
