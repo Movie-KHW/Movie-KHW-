@@ -111,9 +111,8 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
     }
 
     final authorId = firebaseUser.uid;
-    final authorName = currentUser?.displayName ??
-        firebaseUser.displayName ??
-        'Pengguna KHW';
+    final authorName =
+        currentUser?.displayName ?? firebaseUser.displayName ?? 'Pengguna KHW';
 
     bool success;
 
@@ -130,7 +129,9 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
         newImageFile: _selectedImageFile,
         removeCurrentImage: _removeExistingImage,
         existingImageUrl: _removeExistingImage ? null : existingStory.imageUrl,
-        existingImagePath: _removeExistingImage ? null : existingStory.imagePath,
+        existingImagePath: _removeExistingImage
+            ? null
+            : existingStory.imagePath,
       );
     } else {
       // ===== MENAMBAHKAN CERITA =====
@@ -176,7 +177,6 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
   // ===== MEMBANGUN TAMPILAN =====
   @override
   Widget build(BuildContext context) {
-    final storyProvider = Provider.of<StoryProvider>(context);
     final existingStory = widget.storyToEdit;
     final isRejected = existingStory?.isRejected ?? false;
 
@@ -204,14 +204,20 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.error.withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: AppColors.error.withValues(alpha: 0.5)),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.5),
+                    ),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Row(
                         children: [
-                          Icon(Icons.warning_amber_rounded, color: AppColors.error, size: 20),
+                          Icon(
+                            Icons.warning_amber_rounded,
+                            color: AppColors.error,
+                            size: 20,
+                          ),
                           SizedBox(width: 8),
                           Text(
                             'Cerita Ditolak Oleh Admin',
@@ -235,7 +241,10 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                       const SizedBox(height: 6),
                       const Text(
                         'Silakan sesuaikan isi cerita Anda sesuai catatan di atas, kemudian simpan untuk mengajukan kembali ke moderasi.',
-                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                        style: TextStyle(
+                          color: AppColors.textSecondary,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
@@ -258,7 +267,10 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                     Expanded(
                       child: Text(
                         'Cerita baru maupun yang diedit otomatis berstatus "pending" dan akan diperiksa oleh admin sebelum tayang.',
-                        style: TextStyle(fontSize: 12, color: AppColors.textSecondary),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: AppColors.textSecondary,
+                        ),
                       ),
                     ),
                   ],
@@ -269,7 +281,11 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               // 1. Judul Cerita
               const Text(
                 'Judul Cerita Horor',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 6),
               TextFormField(
@@ -279,9 +295,15 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Misal: Misteri Malam Jumat di Asrama Lama',
-                  hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  hintStyle: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
                   counterStyle: const TextStyle(color: AppColors.textMuted),
-                  prefixIcon: const Icon(Icons.title, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(
+                    Icons.title,
+                    color: AppColors.textSecondary,
+                  ),
                   filled: true,
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(
@@ -295,7 +317,11 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               // 2. Kategori Cerita
               const Text(
                 'Kategori Cerita',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 6),
               DropdownButtonFormField<String>(
@@ -303,7 +329,10 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                 items: _categoryOptions.map((cat) {
                   return DropdownMenuItem(
                     value: cat,
-                    child: Text(cat, style: const TextStyle(color: AppColors.textPrimary)),
+                    child: Text(
+                      cat,
+                      style: const TextStyle(color: AppColors.textPrimary),
+                    ),
                   );
                 }).toList(),
                 onChanged: (val) {
@@ -313,7 +342,10 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                 },
                 dropdownColor: AppColors.surface,
                 decoration: InputDecoration(
-                  prefixIcon: const Icon(Icons.category, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(
+                    Icons.category,
+                    color: AppColors.textSecondary,
+                  ),
                   filled: true,
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(
@@ -327,7 +359,11 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               // 3. Lokasi Kejadian (Opsional)
               const Text(
                 'Lokasi Kejadian (Opsional)',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 6),
               TextFormField(
@@ -336,9 +372,15 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                 style: const TextStyle(color: AppColors.textPrimary),
                 decoration: InputDecoration(
                   hintText: 'Misal: Alas Roban, Jawa Tengah',
-                  hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  hintStyle: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
                   counterStyle: const TextStyle(color: AppColors.textMuted),
-                  prefixIcon: const Icon(Icons.location_on_outlined, color: AppColors.textSecondary),
+                  prefixIcon: const Icon(
+                    Icons.location_on_outlined,
+                    color: AppColors.textSecondary,
+                  ),
                   filled: true,
                   fillColor: AppColors.surface,
                   border: OutlineInputBorder(
@@ -352,7 +394,9 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               // 4. Foto Sampul Cerita (Firebase Storage)
               ImagePickerField(
                 selectedFile: _selectedImageFile,
-                existingImageUrl: _removeExistingImage ? null : existingStory?.imageUrl,
+                existingImageUrl: _removeExistingImage
+                    ? null
+                    : existingStory?.imageUrl,
                 onImageSelected: (file) {
                   setState(() {
                     _selectedImageFile = file;
@@ -371,7 +415,11 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               // 5. Isi Cerita Horor
               const Text(
                 'Isi Kisah Horor',
-                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+                style: TextStyle(
+                  fontSize: 13,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
               const SizedBox(height: 6),
               TextFormField(
@@ -379,10 +427,16 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                 validator: _validateContent,
                 maxLines: 12,
                 minLines: 6,
-                style: const TextStyle(color: AppColors.textPrimary, height: 1.5),
+                style: const TextStyle(
+                  color: AppColors.textPrimary,
+                  height: 1.5,
+                ),
                 decoration: InputDecoration(
                   hintText: 'Tuliskan pengalaman mistis Anda secara rinci...',
-                  hintStyle: const TextStyle(color: AppColors.textMuted, fontSize: 13),
+                  hintStyle: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 13,
+                  ),
                   filled: true,
                   fillColor: AppColors.surface,
                   alignLabelWithHint: true,
@@ -397,34 +451,50 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               // Tombol Kirim / Ajukan Ulang
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: storyProvider.isActionLoading ? null : _handleSubmit,
-                  icon: storyProvider.isActionLoading
-                      ? const SizedBox(
-                          width: 18,
-                          height: 18,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                          ),
-                        )
-                      : Icon(isEditMode ? Icons.send_rounded : Icons.publish_rounded),
-                  label: Text(
-                    storyProvider.isActionLoading
-                        ? 'Menyimpan & Mengunggah...'
-                        : isEditMode
-                            ? (isRejected ? 'Ajukan Ulang Cerita' : 'Simpan Perubahan')
+                child: Consumer<StoryProvider>(
+                  builder: (context, storyProvider, _) {
+                    final isLoading = storyProvider.isActionLoading;
+                    return ElevatedButton.icon(
+                      onPressed: isLoading ? null : _handleSubmit,
+                      icon: isLoading
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
+                              ),
+                            )
+                          : Icon(
+                              isEditMode
+                                  ? Icons.send_rounded
+                                  : Icons.publish_rounded,
+                            ),
+                      label: Text(
+                        isLoading
+                            ? 'Menyimpan & Mengunggah...'
+                            : isEditMode
+                            ? (isRejected
+                                  ? 'Ajukan Ulang Cerita'
+                                  : 'Simpan Perubahan')
                             : 'Kirim Cerita ke Admin',
-                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    foregroundColor: AppColors.textPrimary,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                        ),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: AppColors.textPrimary,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    );
+                  },
                 ),
               ),
               const SizedBox(height: 24),
