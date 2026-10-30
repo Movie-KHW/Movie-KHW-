@@ -195,6 +195,38 @@ class FirestoreService {
     }
   }
 
+  Future<void> updateStoryImage({
+    required String storyId,
+    required String authorId,
+    required String imageUrl,
+    required String imagePath,
+  }) async {
+    try {
+      final storyRef = _storiesCollection.doc(storyId);
+      final doc = await storyRef.get();
+      if (!doc.exists) {
+        throw Exception('Cerita tidak ditemukan.');
+      }
+
+      final data = doc.data()!;
+      if (data['authorId'] != authorId) {
+        throw Exception(
+          'Akses ditolak: Anda tidak memiliki izin untuk mengubah foto cerita ini.',
+        );
+      }
+      if (data['imageUrl'] != null || data['imagePath'] != null) {
+        throw Exception('Foto cerita ini sudah pernah diunggah.');
+      }
+
+      await storyRef.update({
+        'imageUrl': imageUrl,
+        'imagePath': imagePath,
+      });
+    } catch (e) {
+      throw Exception('Gagal menyimpan foto cerita: $e');
+    }
+  }
+
   // ===== MENGHAPUS CERITA =====
   // Menghapus cerita dari Firestore dengan verifikasi hak milik
   Future<void> deleteStory({
