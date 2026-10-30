@@ -15,7 +15,10 @@ class StoryProvider extends ChangeNotifier {
   // State data cerita
   List<StoryModel> _publicStories = [];
   List<StoryModel> _userStories = [];
+  List<StoryModel> _moderationStories = [];
+  List<StoryModel> _pendingModerationStories = [];
   StoryModel? _selectedStory;
+  String? _userStoriesUid;
 
   // Filter kategori cerita publik
   String _selectedCategory = 'Semua';
@@ -25,6 +28,8 @@ class StoryProvider extends ChangeNotifier {
 
   // State status pemuatan data
   bool _isLoading = false;
+  bool _isLoadingUserStories = false;
+  bool _isModerationLoading = false;
   bool _isActionLoading = false;
   String? _errorMessage;
   String? _actionSuccessMessage;
@@ -32,22 +37,28 @@ class StoryProvider extends ChangeNotifier {
   // Subscription stream Firestore
   StreamSubscription<List<StoryModel>>? _publicStoriesSubscription;
   StreamSubscription<List<StoryModel>>? _userStoriesSubscription;
+  StreamSubscription<List<StoryModel>>? _moderationStoriesSubscription;
+  StreamSubscription<List<StoryModel>>? _pendingModerationSubscription;
 
   StoryProvider({
     FirestoreService? firestoreService,
     StorageService? storageService,
-  })  : _firestoreService = firestoreService ?? FirestoreService(),
-        _storageService = storageService ?? StorageService() {
+  }) : _firestoreService = firestoreService ?? FirestoreService(),
+       _storageService = storageService ?? StorageService() {
     initPublicStoriesStream();
   }
 
   // ===== GETTER STATE =====
   List<StoryModel> get publicStories => _publicStories;
   List<StoryModel> get userStories => _userStories;
+  List<StoryModel> get moderationStories => _moderationStories;
+  List<StoryModel> get pendingModerationStories => _pendingModerationStories;
   StoryModel? get selectedStory => _selectedStory;
   String get selectedCategory => _selectedCategory;
   String get selectedUserStatus => _selectedUserStatus;
   bool get isLoading => _isLoading;
+  bool get isLoadingUserStories => _isLoadingUserStories;
+  bool get isModerationLoading => _isModerationLoading;
   bool get isActionLoading => _isActionLoading;
   String? get errorMessage => _errorMessage;
   String? get actionSuccessMessage => _actionSuccessMessage;
@@ -58,7 +69,9 @@ class StoryProvider extends ChangeNotifier {
       return _publicStories;
     }
     return _publicStories
-        .where((s) => s.category.toLowerCase() == _selectedCategory.toLowerCase())
+        .where(
+          (s) => s.category.toLowerCase() == _selectedCategory.toLowerCase(),
+        )
         .toList();
   }
 
@@ -68,17 +81,26 @@ class StoryProvider extends ChangeNotifier {
       return _userStories;
     }
     return _userStories
-        .where((s) => s.status.toLowerCase() == _selectedUserStatus.toLowerCase())
+        .where(
+          (s) => s.status.toLowerCase() == _selectedUserStatus.toLowerCase(),
+        )
         .toList();
   }
 
   // Jumlah cerita pengguna berdasarkan status
   int get userPendingCount =>
       _userStories.where((s) => s.status == AppConstants.statusPending).length;
-  int get userPublishedCount =>
-      _userStories.where((s) => s.status == AppConstants.statusPublished).length;
+  int get userPublishedCount => _userStories
+      .where((s) => s.status == AppConstants.statusPublished)
+      .length;
   int get userRejectedCount =>
       _userStories.where((s) => s.status == AppConstants.statusRejected).length;
+  int get moderationPendingCount =>
+      _moderationStories.where((s) => s.isPending).length;
+  int get moderationPublishedCount =>
+      _moderationStories.where((s) => s.isPublished).length;
+  int get moderationRejectedCount =>
+      _moderationStories.where((s) => s.isRejected).length;
 
   // ===== MEMBACA DATA CERITA =====
 
@@ -89,38 +111,108 @@ class StoryProvider extends ChangeNotifier {
     notifyListeners();
 
     _publicStoriesSubscription?.cancel();
-    _publicStoriesSubscription =
-        _firestoreService.getPublishedStoriesStream().listen(
-      (stories) {
-        _publicStories = stories;
-        _isLoading = false;
-        _errorMessage = null;
-        notifyListeners();
-      },
-      onError: (error) {
-        _isLoading = false;
-        _errorMessage = 'Gagal memuat cerita publik: $error';
-        notifyListeners();
-      },
-    );
+    _publicStoriesSubscription = _firestoreService
+        .getPublishedStoriesStream()
+        .listen(
+          (stories) {
+            _publicStories = stories;
+            _isLoading = false;
+            _errorMessage = null;
+            notifyListeners();
+          },
+          onError: (error) {
+            _isLoading = false;
+            _errorMessage = 'Gagal memuat cerita publik: $error';
+            notifyListeners();
+          },
+        );
   }
 
   // Menginisialisasi stream cerita milik pengguna yang sedang login
   void initUserStoriesStream(String uid) {
     if (uid.isEmpty) return;
+    if (_userStoriesUid == uid && _userStoriesSubscription != null) return;
 
+    _userStoriesUid = uid;
+    _userStories = [];
+    _isLoadingUserStories = true;
     _userStoriesSubscription?.cancel();
-    _userStoriesSubscription =
-        _firestoreService.getUserStoriesStream(uid).listen(
-      (stories) {
-        _userStories = stories;
-        notifyListeners();
-      },
-      onError: (error) {
-        _errorMessage = 'Gagal memuat cerita Anda: $error';
-        notifyListeners();
-      },
-    );
+    notifyListeners();
+    _userStoriesSubscription = _firestoreService
+        .getUserStoriesStream(uid)
+        .listen(
+          (stories) {
+            if (_userStoriesUid != uid) return;
+            _userStories = stories;
+            _isLoadingUserStories = false;
+            _errorMessage = null;
+            notifyListeners();
+          },
+          onError: (error) {
+            if (_userStoriesUid != uid) return;
+            _isLoadingUserStories = false;
+            _errorMessage = 'Gagal memuat cerita Anda: $error';
+            notifyListeners();
+          },
+        );
+  }
+
+  void initModerationStreams() {
+    if (_moderationStoriesSubscription != null &&
+        _pendingModerationSubscription != null) {
+      return;
+    }
+
+    _isModerationLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    _moderationStoriesSubscription = _firestoreService
+        .getAllStoriesForModeration()
+        .listen(
+          (stories) {
+            _moderationStories = stories;
+            _isModerationLoading = false;
+            _errorMessage = null;
+            notifyListeners();
+          },
+          onError: (error) {
+            _moderationStoriesSubscription?.cancel();
+            _pendingModerationSubscription?.cancel();
+            _moderationStoriesSubscription = null;
+            _pendingModerationSubscription = null;
+            _isModerationLoading = false;
+            _errorMessage = 'Gagal memuat data moderasi: $error';
+            notifyListeners();
+          },
+        );
+
+    _pendingModerationSubscription = _firestoreService
+        .getAllPendingStories()
+        .listen(
+          (stories) {
+            _pendingModerationStories = stories;
+            notifyListeners();
+          },
+          onError: (error) {
+            _moderationStoriesSubscription?.cancel();
+            _pendingModerationSubscription?.cancel();
+            _moderationStoriesSubscription = null;
+            _pendingModerationSubscription = null;
+            _isModerationLoading = false;
+            _errorMessage =
+                'Gagal memuat cerita yang menunggu moderasi: $error';
+            notifyListeners();
+          },
+        );
+  }
+
+  void retryModerationStreams() {
+    _moderationStoriesSubscription?.cancel();
+    _pendingModerationSubscription?.cancel();
+    _moderationStoriesSubscription = null;
+    _pendingModerationSubscription = null;
+    initModerationStreams();
   }
 
   // Mengambil ulang data cerita publik secara manual (Refresh)
@@ -196,11 +288,14 @@ class StoryProvider extends ChangeNotifier {
   }) async {
     _setActionLoading(true);
     _clearMessages();
+    String? uploadedImagePath;
 
     try {
       // 1. Validasi foto jika ada
       if (imageFile != null) {
-        final validationError = await _storageService.validateImageFile(imageFile);
+        final validationError = await _storageService.validateImageFile(
+          imageFile,
+        );
         if (validationError != null) {
           _errorMessage = validationError;
           _setActionLoading(false);
@@ -208,50 +303,71 @@ class StoryProvider extends ChangeNotifier {
         }
       }
 
-      // 2. Buat dokumen cerita di Firestore terlebih dahulu untuk mendapatkan ID unik
-      final storyId = await _firestoreService.createStory(
-        title: title,
-        content: content,
-        category: category,
-        location: location,
-        imageUrl: null,
-        imagePath: null,
-        authorId: authorId,
-        authorName: authorName,
-      );
-
-      // 3. Jika ada foto, unggah ke Cloud Storage menggunakan path: story_images/{uid}/{storyId}/foto.ext
+      final storyId = _firestoreService.generateStoryId();
+      Map<String, String>? uploadResult;
+      var imageUploadFailed = false;
       if (imageFile != null) {
         try {
-          final uploadResult = await _storageService.uploadStoryImage(
+          uploadResult = await _storageService.uploadStoryImage(
             file: imageFile,
             uid: authorId,
             storyId: storyId,
           );
-
-          // Update dokumen dengan imageUrl dan imagePath
-          await _firestoreService.updateStory(
-            storyId: storyId,
-            authorId: authorId,
-            title: title,
-            content: content,
-            category: category,
-            location: location,
-            imageUrl: uploadResult['imageUrl'],
-            imagePath: uploadResult['imagePath'],
-          );
+          uploadedImagePath = uploadResult['imagePath'];
         } catch (storageError) {
-          debugPrint('Peringatan: Gagal unggah foto saat tambah cerita: $storageError');
-          // Cerita tetap tersimpan meskipun foto gagal diunggah
-          _actionSuccessMessage =
-              'Cerita tersimpan, namun foto gagal diunggah. Menunggu moderasi admin.';
-          _setActionLoading(false);
-          return true;
+          debugPrint(
+            'Peringatan: Gagal unggah foto saat tambah cerita: $storageError',
+          );
+          imageUploadFailed = true;
         }
       }
 
-      _actionSuccessMessage =
-          'Cerita berhasil dikirim! Menunggu pemeriksaan dari admin (pending).';
+      await _firestoreService.createStory(
+        storyId: storyId,
+        title: title,
+        content: content,
+        category: category,
+        location: location,
+        imageUrl: uploadResult?['imageUrl'],
+        imagePath: uploadResult?['imagePath'],
+        authorId: authorId,
+        authorName: authorName,
+      );
+
+      _actionSuccessMessage = imageUploadFailed
+          ? 'Cerita tersimpan, namun foto gagal diunggah. Menunggu moderasi admin.'
+          : 'Cerita berhasil dikirim! Menunggu pemeriksaan dari admin (pending).';
+      _setActionLoading(false);
+      return true;
+    } catch (e) {
+      if (uploadedImagePath != null) {
+        await _storageService.deleteStoryImage(uploadedImagePath);
+      }
+      _errorMessage = e.toString().replaceAll('Exception: ', '');
+      _setActionLoading(false);
+      return false;
+    }
+  }
+
+  Future<bool> moderateStory({
+    required String storyId,
+    required String status,
+    String? moderationNote,
+    required String reviewedBy,
+  }) async {
+    _setActionLoading(true);
+    _clearMessages();
+
+    try {
+      await _firestoreService.moderateStory(
+        storyId: storyId,
+        status: status,
+        moderationNote: moderationNote,
+        reviewedBy: reviewedBy,
+      );
+      _actionSuccessMessage = status == AppConstants.statusPublished
+          ? 'Cerita berhasil disetujui dan diterbitkan.'
+          : 'Cerita berhasil ditolak.';
       _setActionLoading(false);
       return true;
     } catch (e) {
@@ -291,7 +407,9 @@ class StoryProvider extends ChangeNotifier {
 
       // 2. Jika ada foto baru yang dipilih
       if (newImageFile != null) {
-        final validationError = await _storageService.validateImageFile(newImageFile);
+        final validationError = await _storageService.validateImageFile(
+          newImageFile,
+        );
         if (validationError != null) {
           _errorMessage = validationError;
           _setActionLoading(false);
@@ -396,6 +514,8 @@ class StoryProvider extends ChangeNotifier {
   void dispose() {
     _publicStoriesSubscription?.cancel();
     _userStoriesSubscription?.cancel();
+    _moderationStoriesSubscription?.cancel();
+    _pendingModerationSubscription?.cancel();
     super.dispose();
   }
 }
