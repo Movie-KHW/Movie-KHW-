@@ -20,7 +20,7 @@ Sesuai ketentuan baku lembar soal UTS:
 
 ## 📖 Deskripsi Proyek
 
-**KHW Movie** adalah aplikasi mobile berbasis Flutter bertema cerita horor komunitas dan penemuan film horor. Pengguna dapat membaca cerita yang telah diterbitkan, mengirim cerita beserta foto opsional, melihat status moderasi cerita (`pending`, `published`, `rejected`), menjelajahi katalog film horor melalui TMDB API, mencari film, menyimpan film favorit, serta mengelola akun dan profil.
+**KHW Movie** adalah aplikasi mobile berbasis Flutter bertema cerita horor komunitas dan penemuan film horor. Pengguna dapat membaca cerita yang telah diterbitkan, mengirim cerita untuk dimoderasi, melihat status moderasi cerita (`pending`, `published`, `rejected`), menjelajahi katalog film horor melalui TMDB API, mencari film, menyimpan film favorit, serta mengelola akun dan profil.
 
 *Catatan: Proyek ini dikembangkan secara independen oleh mahasiswa untuk pemenuhan tugas akademik UTS dan bukan aplikasi resmi atau afiliasi Nadia Omara maupun pihak lainnya.*
 
@@ -51,8 +51,8 @@ Sesuai ketentuan baku lembar soal UTS:
 
 2. **Modul Cerita Horor & Storage (Duwi Galu Gandimi - 2411500010)**:
    - CRUD Cerita Horor ke Cloud Firestore.
-   - Upload & kelola foto pendukung ke Firebase Storage.
-   - Status awal cerita wajib `pending`.
+   - Mengirim dan mengelola cerita teks tanpa proses unggah foto.
+   - Status awal cerita wajib `pending`; cerita hanya dapat diedit atau dihapus sebelum ditinjau admin.
 
 3. **Modul TMDB API & Favorit (Fathurrahman Safari Lubis - 2411500025)**:
    - Integrasi REST API TMDB menggunakan `Dio` dengan endpoint `/discover/movie?with_genres=27`, `/movie/{movie_id}`, dan `/search/movie`.
