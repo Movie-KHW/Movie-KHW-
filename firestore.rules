@@ -77,8 +77,6 @@ match /stories/{storyId} {
       'content',
       'category',
       'location',
-      'imageUrl',
-      'imagePath',
       'authorId',
       'authorName',
       'status',
@@ -99,6 +97,7 @@ match /stories/{storyId} {
   allow update: if (
     isAuthenticated()
     && resource.data.authorId == request.auth.uid
+    && resource.data.status == 'pending'
     && request.resource.data.authorId == resource.data.authorId
     && request.resource.data.diff(resource.data)
       .affectedKeys().hasOnly([
@@ -106,8 +105,6 @@ match /stories/{storyId} {
         'content',
         'category',
         'location',
-        'imageUrl',
-        'imagePath',
         'status',
         'moderationNote',
         'updatedAt'
@@ -116,21 +113,8 @@ match /stories/{storyId} {
     && request.resource.data.moderationNote == null
     && request.resource.data.updatedAt is timestamp
   ) || (
-    isAuthenticated()
-    && resource.data.authorId == request.auth.uid
-    && request.resource.data.authorId == resource.data.authorId
-    && request.resource.data.diff(resource.data)
-      .affectedKeys().hasOnly([
-        'imageUrl',
-        'imagePath'
-      ])
-    && resource.data.imageUrl == null
-    && resource.data.imagePath == null
-    && request.resource.data.imageUrl is string
-    && request.resource.data.imagePath is string
-    && request.resource.data.status == resource.data.status
-  ) || (
     isAdmin()
+    && resource.data.status == 'pending'
     && request.resource.data.diff(resource.data)
       .affectedKeys().hasOnly([
         'status',
@@ -140,7 +124,6 @@ match /stories/{storyId} {
         'updatedAt'
       ])
     && request.resource.data.status in [
-      'pending',
       'published',
       'rejected'
     ]
@@ -149,10 +132,13 @@ match /stories/{storyId} {
     && request.resource.data.updatedAt is timestamp
   );
 
-  allow delete: if (
-    isAuthenticated()
-    && resource.data.authorId == request.auth.uid
-  ) || isAdmin();
+  allow delete: if resource.data.status == 'pending'
+    && (
+      (
+        isAuthenticated()
+        && resource.data.authorId == request.auth.uid
+      ) || isAdmin()
+    );
 }
 
 
