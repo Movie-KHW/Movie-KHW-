@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_constants.dart';
+import 'movies/movie_list_screen.dart';
 import 'profile_screen.dart';
 import 'story/story_list_screen.dart';
 
@@ -17,73 +18,6 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   // Indeks tab aktif pada navigasi bawah (BottomNavigationBar)
   int _currentIndex = 0;
-
-  // ===== MEMBANGUN KARTU MODUL ANGGOTA =====
-  Widget _buildModulePlaceholder({
-    required String title,
-    required String developer,
-    required String nim,
-    required String description,
-    required IconData icon,
-    required Color color,
-  }) {
-    return Center(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Container(
-          padding: const EdgeInsets.all(24),
-          decoration: BoxDecoration(
-            color: AppColors.surface,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.divider),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: color.withValues(alpha: 0.15),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icon, size: 48, color: color),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                description,
-                textAlign: TextAlign.center,
-                style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: AppColors.background,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: AppColors.divider),
-                ),
-                child: Text(
-                  'Modul ini dikembangkan oleh:\n$developer ($nim)',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(fontSize: 12, color: AppColors.accent),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
 
   // ===== TAMPILAN DASHBOARD BERANDA =====
   Widget _buildHomeDashboard(AuthProvider authProvider) {
@@ -312,15 +246,8 @@ class _HomeScreenState extends State<HomeScreen> {
       _buildHomeDashboard(authProvider),
       // Modul Anggota 2 (Duwi Galu Gandimi - 2411500010): Komunitas Cerita Horor
       const StoryListScreen(),
-      // Modul Anggota 3 (Fathurrahman Safari Lubis - 2411500025): Katalog Film TMDB
-      _buildModulePlaceholder(
-        title: 'Katalog & Pencarian Film TMDB',
-        developer: 'Fathurrahman Safari Lubis',
-        nim: '2411500025',
-        description: 'Modul integrasi TMDB API via Dio, daftar film horor, pencarian, dan favorit pengguna.',
-        icon: Icons.movie_creation_outlined,
-        color: AppColors.accent,
-      ),
+      // Modul Anggota 3 (Fathurrahman Safari Lubis - 2411500025): Katalog Film TMDB & Favorit
+      const MovieListScreen(),
       // Profil Pengguna (Anggota 1)
       const ProfileScreen(),
     ];
