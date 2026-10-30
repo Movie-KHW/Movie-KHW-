@@ -1,4 +1,5 @@
 // ===== IMPORT LIBRARY =====
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../models/story_model.dart';
@@ -26,10 +27,12 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final uid = auth.firebaseUser?.uid;
       if (uid != null && uid.isNotEmpty) {
-        Provider.of<StoryProvider>(
+        final provider = Provider.of<StoryProvider>(
           context,
           listen: false,
-        ).initUserStoriesStream(uid);
+        );
+        provider.initUserStoriesStream(uid, restart: true);
+        unawaited(provider.refreshUserStories(uid));
       }
     });
   }
@@ -223,42 +226,6 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
         children: [
           // Filter Status Moderasi
           _buildStatusFilterChips(storyProvider),
-          if (storyProvider.isStoryImageUploading)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Row(
-                children: [
-                  const SizedBox(
-                    width: 18,
-                    height: 18,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      color: AppColors.primaryLight,
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  Expanded(
-                    child: Text(
-                      'Cerita sudah tersimpan. Mengunggah foto '
-                      '${(storyProvider.storyImageUploadProgress * 100).round()}% '
-                      'di latar belakang.',
-                      style: const TextStyle(
-                        color: AppColors.textSecondary,
-                        fontSize: 12,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (storyProvider.storyImageUploadError != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
-              child: Text(
-                storyProvider.storyImageUploadError!,
-                style: const TextStyle(color: AppColors.error, fontSize: 12),
-              ),
-            ),
           const Divider(color: AppColors.divider, height: 1),
 
           // Daftar Cerita Milik Pengguna
@@ -317,16 +284,20 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
                             ),
                           );
                         },
-                        onEdit: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) =>
-                                  StoryFormScreen(storyToEdit: story),
-                            ),
-                          );
-                        },
-                        onDelete: () => _showDeleteDialog(context, story),
+                        onEdit: story.isPending
+                            ? () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) =>
+                                        StoryFormScreen(storyToEdit: story),
+                                  ),
+                                );
+                              }
+                            : null,
+                        onDelete: story.isPending
+                            ? () => _showDeleteDialog(context, story)
+                            : null,
                       );
                     },
                   );
