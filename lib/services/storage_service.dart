@@ -82,6 +82,7 @@ class StorageService {
     required XFile file,
     required String uid,
     required String storyId,
+    void Function(double progress)? onProgress,
   }) async {
     try {
       // Dapatkan ekstensi file
@@ -112,8 +113,22 @@ class StorageService {
         uploadTask = ref.putFile(ioFile, metadata);
       }
 
-      final snapshot = await uploadTask;
+      final progressSubscription = uploadTask.snapshotEvents.listen((snapshot) {
+        if (snapshot.totalBytes > 0) {
+          onProgress?.call(snapshot.bytesTransferred / snapshot.totalBytes);
+        }
+      }, onError: (Object error) {
+        debugPrint('Gagal membaca progres unggah foto: $error');
+      });
+
+      late final TaskSnapshot snapshot;
+      try {
+        snapshot = await uploadTask;
+      } finally {
+        await progressSubscription.cancel();
+      }
       final downloadUrl = await snapshot.ref.getDownloadURL();
+      onProgress?.call(1);
 
       return {'imageUrl': downloadUrl, 'imagePath': storagePath};
     } on FirebaseException catch (e) {
