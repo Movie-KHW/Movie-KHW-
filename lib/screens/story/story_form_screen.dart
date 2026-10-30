@@ -474,7 +474,7 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                             ),
                       label: Text(
                         isLoading
-                            ? 'Menyimpan & Mengunggah...'
+                            ? 'Menyimpan cerita...'
                             : isEditMode
                             ? (isRejected
                                   ? 'Ajukan Ulang Cerita'
