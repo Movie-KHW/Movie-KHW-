@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_constants.dart';
 import 'profile_screen.dart';
+import 'story/story_list_screen.dart';
 
 // ===== TAMPILAN BERANDA UTAMA =====
 class HomeScreen extends StatefulWidget {
@@ -309,14 +310,9 @@ class _HomeScreenState extends State<HomeScreen> {
     // Daftar Halaman Sesuai Pembagian Modul Tim KHW Movie
     final pages = [
       _buildHomeDashboard(authProvider),
-      _buildModulePlaceholder(
-        title: 'Komunitas Cerita Horor',
-        developer: 'Duwi Galu Gandimi',
-        nim: '2411500010',
-        description: 'Modul CRUD cerita horor, upload foto Cloud Storage, dan status moderasi.',
-        icon: Icons.auto_stories,
-        color: AppColors.primaryLight,
-      ),
+      // Modul Anggota 2 (Duwi Galu Gandimi - 2411500010): Komunitas Cerita Horor
+      const StoryListScreen(),
+      // Modul Anggota 3 (Fathurrahman Safari Lubis - 2411500025): Katalog Film TMDB
       _buildModulePlaceholder(
         title: 'Katalog & Pencarian Film TMDB',
         developer: 'Fathurrahman Safari Lubis',
@@ -325,6 +321,7 @@ class _HomeScreenState extends State<HomeScreen> {
         icon: Icons.movie_creation_outlined,
         color: AppColors.accent,
       ),
+      // Profil Pengguna (Anggota 1)
       const ProfileScreen(),
     ];
 
