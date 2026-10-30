@@ -8,7 +8,7 @@ class FirestoreService {
   final FirebaseFirestore _firestore;
 
   FirestoreService({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   // Koleksi stories
   CollectionReference<Map<String, dynamic>> get _storiesCollection =>
@@ -23,12 +23,12 @@ class FirestoreService {
         .where('status', isEqualTo: AppConstants.statusPublished)
         .snapshots()
         .map((snapshot) {
-      final list = snapshot.docs
-          .map((doc) => StoryModel.fromFirestore(doc))
-          .toList();
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
-    });
+          final list = snapshot.docs
+              .map((doc) => StoryModel.fromFirestore(doc))
+              .toList();
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return list;
+        });
   }
 
   // Mengambil daftar cerita publik sekali unduh (Future)
@@ -50,16 +50,15 @@ class FirestoreService {
 
   // Stream daftar cerita milik pengguna tertentu (berdasarkan authorId)
   Stream<List<StoryModel>> getUserStoriesStream(String uid) {
-    return _storiesCollection
-        .where('authorId', isEqualTo: uid)
-        .snapshots()
-        .map((snapshot) {
-      final list = snapshot.docs
-          .map((doc) => StoryModel.fromFirestore(doc))
-          .toList();
-      list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
-      return list;
-    });
+    return _storiesCollection.where('authorId', isEqualTo: uid).snapshots().map(
+      (snapshot) {
+        final list = snapshot.docs
+            .map((doc) => StoryModel.fromFirestore(doc))
+            .toList();
+        list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        return list;
+      },
+    );
   }
 
   // Mengambil daftar cerita milik pengguna (Future)
@@ -104,7 +103,10 @@ class FirestoreService {
 
   // ===== MENAMBAHKAN CERITA =====
   // Menambahkan cerita baru. Status selalu dipaksa menjadi 'pending'
+  String generateStoryId() => _storiesCollection.doc().id;
+
   Future<String> createStory({
+    String? storyId,
     required String title,
     required String content,
     required String category,
@@ -116,7 +118,9 @@ class FirestoreService {
   }) async {
     try {
       final now = DateTime.now();
-      final docRef = _storiesCollection.doc(); // Generate ID otomatis
+      final docRef = storyId == null
+          ? _storiesCollection.doc()
+          : _storiesCollection.doc(storyId);
 
       final newStory = StoryModel(
         id: docRef.id,
@@ -165,18 +169,23 @@ class FirestoreService {
       final existingData = doc.data()!;
       // Validasi kepemilikan cerita
       if (existingData['authorId'] != authorId) {
-        throw Exception('Akses ditolak: Anda tidak memiliki izin untuk mengedit cerita ini.');
+        throw Exception(
+          'Akses ditolak: Anda tidak memiliki izin untuk mengedit cerita ini.',
+        );
       }
 
       final updateData = <String, dynamic>{
         'title': title.trim(),
         'content': content.trim(),
         'category': category.trim(),
-        'location': location?.trim().isNotEmpty == true ? location!.trim() : null,
+        'location': location?.trim().isNotEmpty == true
+            ? location!.trim()
+            : null,
         'imageUrl': imageUrl,
         'imagePath': imagePath,
         'status': AppConstants.statusPending, // Reset ke pending saat diedit
-        'moderationNote': null, // Bersihkan catatan penolakan lama saat diajukan ulang
+        'moderationNote':
+            null, // Bersihkan catatan penolakan lama saat diajukan ulang
         'updatedAt': Timestamp.now(),
       };
 
@@ -201,7 +210,9 @@ class FirestoreService {
 
       final existingData = doc.data()!;
       if (!isAdmin && existingData['authorId'] != authorId) {
-        throw Exception('Akses ditolak: Anda tidak memiliki izin untuk menghapus cerita ini.');
+        throw Exception(
+          'Akses ditolak: Anda tidak memiliki izin untuk menghapus cerita ini.',
+        );
       }
 
       await _storiesCollection.doc(storyId).delete();
@@ -213,15 +224,26 @@ class FirestoreService {
   // ===== INTEGRASI MODERASI ADMIN (ANGGOTA 4) =====
   // Mengambil semua cerita untuk moderasi (disediakan untuk Anggota 4)
   Stream<List<StoryModel>> getAllStoriesForModeration() {
-    return _storiesCollection
-        .snapshots()
-        .map((snapshot) {
+    return _storiesCollection.snapshots().map((snapshot) {
       final list = snapshot.docs
           .map((doc) => StoryModel.fromFirestore(doc))
           .toList();
       list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
       return list;
     });
+  }
+
+  Stream<List<StoryModel>> getAllPendingStories() {
+    return _storiesCollection
+        .where('status', isEqualTo: AppConstants.statusPending)
+        .snapshots()
+        .map((snapshot) {
+          final stories = snapshot.docs
+              .map((doc) => StoryModel.fromFirestore(doc))
+              .toList();
+          stories.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          return stories;
+        });
   }
 
   // Memperbarui status moderasi oleh admin
@@ -231,13 +253,54 @@ class FirestoreService {
     String? moderationNote,
     required String reviewedBy,
   }) async {
+    await moderateStory(
+      storyId: storyId,
+      status: status,
+      moderationNote: moderationNote,
+      reviewedBy: reviewedBy,
+    );
+  }
+
+  Future<void> moderateStory({
+    required String storyId,
+    required String status,
+    String? moderationNote,
+    required String reviewedBy,
+  }) async {
+    if (status != AppConstants.statusPublished &&
+        status != AppConstants.statusRejected) {
+      throw ArgumentError.value(
+        status,
+        'status',
+        'Status moderasi tidak valid.',
+      );
+    }
+    if (status == AppConstants.statusRejected &&
+        (moderationNote == null || moderationNote.trim().isEmpty)) {
+      throw ArgumentError('Catatan wajib diisi untuk menolak cerita.');
+    }
+
     try {
-      await _storiesCollection.doc(storyId).update({
-        'status': status,
-        'moderationNote': moderationNote,
-        'reviewedBy': reviewedBy,
-        'reviewedAt': Timestamp.now(),
-        'updatedAt': Timestamp.now(),
+      final storyRef = _storiesCollection.doc(storyId);
+      await _firestore.runTransaction((transaction) async {
+        final snapshot = await transaction.get(storyRef);
+        if (!snapshot.exists) {
+          throw Exception('Cerita tidak ditemukan.');
+        }
+        if (snapshot.data()?['status'] != AppConstants.statusPending) {
+          throw Exception('Cerita ini sudah ditinjau sebelumnya.');
+        }
+
+        final now = Timestamp.now();
+        transaction.update(storyRef, {
+          'status': status,
+          'moderationNote': status == AppConstants.statusRejected
+              ? moderationNote!.trim()
+              : null,
+          'reviewedBy': reviewedBy,
+          'reviewedAt': now,
+          'updatedAt': now,
+        });
       });
     } catch (e) {
       throw Exception('Gagal memperbarui status moderasi: $e');
