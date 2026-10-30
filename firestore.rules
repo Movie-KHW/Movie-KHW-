@@ -116,6 +116,20 @@ match /stories/{storyId} {
     && request.resource.data.moderationNote == null
     && request.resource.data.updatedAt is timestamp
   ) || (
+    isAuthenticated()
+    && resource.data.authorId == request.auth.uid
+    && request.resource.data.authorId == resource.data.authorId
+    && request.resource.data.diff(resource.data)
+      .affectedKeys().hasOnly([
+        'imageUrl',
+        'imagePath'
+      ])
+    && resource.data.imageUrl == null
+    && resource.data.imagePath == null
+    && request.resource.data.imageUrl is string
+    && request.resource.data.imagePath is string
+    && request.resource.data.status == resource.data.status
+  ) || (
     isAdmin()
     && request.resource.data.diff(resource.data)
       .affectedKeys().hasOnly([
