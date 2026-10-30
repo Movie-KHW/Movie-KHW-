@@ -50,4 +50,29 @@ class Validators {
     }
     return null;
   }
+
+  // Memvalidasi judul cerita horor (Anggota 2)
+  static String? validateStoryTitle(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Judul cerita tidak boleh kosong';
+    }
+    if (value.trim().length < 5) {
+      return 'Judul minimal 5 karakter';
+    }
+    if (value.trim().length > 100) {
+      return 'Judul maksimal 100 karakter';
+    }
+    return null;
+  }
+
+  // Memvalidasi isi cerita horor (Anggota 2)
+  static String? validateStoryContent(String? value) {
+    if (value == null || value.trim().isEmpty) {
+      return 'Isi cerita tidak boleh kosong';
+    }
+    if (value.trim().length < 20) {
+      return 'Isi cerita minimal 20 karakter';
+    }
+    return null;
+  }
 }

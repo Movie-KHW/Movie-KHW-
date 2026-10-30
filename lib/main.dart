@@ -4,6 +4,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/story_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/app_constants.dart';
@@ -42,10 +43,12 @@ class KHWMovieApp extends StatelessWidget {
           create: (_) => AuthProvider(),
         ),
 
-        // Tempat integrasi Provider Anggota lain (Akan dihubungkan oleh Anggota 4):
-        // Provider Anggota 2 (Duwi Galu Gandimi - 2411500010):
-        // ChangeNotifierProvider<StoryProvider>(create: (_) => StoryProvider()),
+        // Provider Anggota 2 (Duwi Galu Gandimi - 2411500010): CRUD Cerita & Cloud Storage
+        ChangeNotifierProvider<StoryProvider>(
+          create: (_) => StoryProvider(),
+        ),
 
+        // Tempat integrasi Provider Anggota lain (Akan dihubungkan oleh Anggota 4):
         // Provider Anggota 3 (Fathurrahman Safari Lubis - 2411500025):
         // ChangeNotifierProvider<MovieProvider>(create: (_) => MovieProvider()),
         // ChangeNotifierProvider<FavoriteProvider>(create: (_) => FavoriteProvider()),
