@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/favorite_provider.dart';
+import 'providers/movie_provider.dart';
 import 'providers/story_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
@@ -41,12 +43,15 @@ class KHWMovieApp extends StatelessWidget {
           create: (_) => StoryProvider(),
         ),
 
-        // Tempat integrasi Provider Anggota lain (Akan dihubungkan oleh Anggota 4):
-        // Provider Anggota 3 (Fathurrahman Safari Lubis - 2411500025):
-        // ChangeNotifierProvider<MovieProvider>(create: (_) => MovieProvider()),
-        // ChangeNotifierProvider<FavoriteProvider>(create: (_) => FavoriteProvider()),
+        // Provider Anggota 3 (Fathurrahman Safari Lubis - 2411500025): TMDB REST API & Favorit
+        ChangeNotifierProvider<MovieProvider>(
+          create: (_) => MovieProvider(),
+        ),
+        ChangeNotifierProvider<FavoriteProvider>(
+          create: (_) => FavoriteProvider(),
+        ),
 
-        // Provider Anggota 4 (Hanin Fadhilah - 2411500033):
+        // Provider Anggota 4 (Hanin Fadhilah - 2411500033): Moderasi Admin
         // ChangeNotifierProvider<ModerationProvider>(create: (_) => ModerationProvider()),
       ],
       child: MaterialApp(
