@@ -21,6 +21,13 @@ class AppConstants {
   static const String statusPending = 'pending';
   static const String statusPublished = 'published';
   static const String statusRejected = 'rejected';
+
+  // Konfigurasi TMDB API (Anggota 3: Fathurrahman Safari Lubis)
+  static const String tmdbBaseUrl = 'https://api.themoviedb.org/3';
+  static const String tmdbImageBaseUrl = 'https://image.tmdb.org/t/p/w500';
+  static const String tmdbBackdropBaseUrl = 'https://image.tmdb.org/t/p/w780';
+  static const int horrorGenreId = 27; // ID Genre Horor resmi TMDB
+  static const String defaultTmdbApiKey = '4e44d9029b1270a757cddc766a1bcb63';
 }
 
 // ===== TEMA DAN WARNA APLIKASI =====
