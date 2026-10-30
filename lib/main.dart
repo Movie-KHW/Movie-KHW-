@@ -4,27 +4,21 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
+import 'providers/story_provider.dart';
 import 'screens/auth/login_screen.dart';
 import 'screens/home_screen.dart';
 import 'utils/app_constants.dart';
-
-// Catatan Firebase Options:
-// Setelah menjalankan perintah `flutterfire configure`, file `firebase_options.dart`
-// akan dihasilkan di direktori `lib/`. Impor file tersebut dan gunakan:
-// import 'firebase_options.dart';
-// await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+import 'firebase_options.dart';
 
 // ===== INISIALISASI APLIKASI =====
 void main() async {
   // Memastikan binding framework Flutter telah siap sebelum pemanggilan asinkron
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Inisialisasi Firebase Core
-  try {
-    await Firebase.initializeApp();
-  } catch (e) {
-    debugPrint('Catatan inisialisasi Firebase: $e');
-  }
+  // Inisialisasi Firebase Core dengan konfigurasi khwmovie-8f74c
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const KHWMovieApp());
 }
@@ -42,10 +36,12 @@ class KHWMovieApp extends StatelessWidget {
           create: (_) => AuthProvider(),
         ),
 
-        // Tempat integrasi Provider Anggota lain (Akan dihubungkan oleh Anggota 4):
-        // Provider Anggota 2 (Duwi Galu Gandimi - 2411500010):
-        // ChangeNotifierProvider<StoryProvider>(create: (_) => StoryProvider()),
+        // Provider Anggota 2 (Duwi Galu Gandimi - 2411500010): CRUD Cerita & Cloud Storage
+        ChangeNotifierProvider<StoryProvider>(
+          create: (_) => StoryProvider(),
+        ),
 
+        // Tempat integrasi Provider Anggota lain (Akan dihubungkan oleh Anggota 4):
         // Provider Anggota 3 (Fathurrahman Safari Lubis - 2411500025):
         // ChangeNotifierProvider<MovieProvider>(create: (_) => MovieProvider()),
         // ChangeNotifierProvider<FavoriteProvider>(create: (_) => FavoriteProvider()),
