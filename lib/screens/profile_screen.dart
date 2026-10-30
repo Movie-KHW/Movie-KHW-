@@ -19,7 +19,10 @@ class ProfileScreen extends StatelessWidget {
             children: [
               Icon(Icons.logout, color: AppColors.primaryLight),
               SizedBox(width: 8),
-              Text('Konfirmasi Keluar', style: TextStyle(color: AppColors.textPrimary)),
+              Text(
+                'Konfirmasi Keluar',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
             ],
           ),
           content: const Text(
@@ -29,7 +32,10 @@ class ProfileScreen extends StatelessWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -38,7 +44,10 @@ class ProfileScreen extends StatelessWidget {
               ),
               onPressed: () async {
                 Navigator.pop(dialogContext); // Tutup dialog
-                final authProvider = Provider.of<AuthProvider>(context, listen: false);
+                final authProvider = Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                );
                 await authProvider.logout();
                 // AuthGate akan otomatis mengarahkan ke LoginScreen
               },
@@ -53,8 +62,18 @@ class ProfileScreen extends StatelessWidget {
   // Format tanggal sederhana tanpa dependensi eksternal intl
   String _formatDate(DateTime date) {
     final months = [
-      'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-      'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+      'Januari',
+      'Februari',
+      'Maret',
+      'April',
+      'Mei',
+      'Juni',
+      'Juli',
+      'Agustus',
+      'September',
+      'Oktober',
+      'November',
+      'Desember',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }
@@ -66,7 +85,8 @@ class ProfileScreen extends StatelessWidget {
     final user = authProvider.userModel;
     final firebaseUser = authProvider.firebaseUser;
 
-    final displayName = user?.displayName ?? firebaseUser?.displayName ?? 'Pengguna KHW';
+    final displayName =
+        user?.displayName ?? firebaseUser?.displayName ?? 'Pengguna KHW';
     final email = user?.email ?? firebaseUser?.email ?? '-';
     final role = user?.role ?? AppConstants.roleUser;
     final isAdmin = user?.isAdmin ?? false;
@@ -146,14 +166,19 @@ class ProfileScreen extends StatelessWidget {
 
                   // Badge Role (User / Admin)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 5,
+                    ),
                     decoration: BoxDecoration(
                       color: isAdmin
                           ? AppColors.primaryDark
                           : AppColors.surfaceLight,
                       borderRadius: BorderRadius.circular(20),
                       border: Border.all(
-                        color: isAdmin ? AppColors.primaryLight : AppColors.divider,
+                        color: isAdmin
+                            ? AppColors.primaryLight
+                            : AppColors.divider,
                       ),
                     ),
                     child: Row(
@@ -162,7 +187,9 @@ class ProfileScreen extends StatelessWidget {
                         Icon(
                           isAdmin ? Icons.admin_panel_settings : Icons.person,
                           size: 16,
-                          color: isAdmin ? AppColors.accent : AppColors.textSecondary,
+                          color: isAdmin
+                              ? AppColors.accent
+                              : AppColors.textSecondary,
                         ),
                         const SizedBox(width: 6),
                         Text(
@@ -171,7 +198,9 @@ class ProfileScreen extends StatelessWidget {
                             fontSize: 12,
                             fontWeight: FontWeight.bold,
                             letterSpacing: 1,
-                            color: isAdmin ? AppColors.accent : AppColors.textSecondary,
+                            color: isAdmin
+                                ? AppColors.accent
+                                : AppColors.textSecondary,
                           ),
                         ),
                       ],
@@ -192,26 +221,60 @@ class ProfileScreen extends StatelessWidget {
               child: Column(
                 children: [
                   ListTile(
-                    leading: const Icon(Icons.fingerprint, color: AppColors.primaryLight),
-                    title: const Text('User ID (UID)', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    leading: const Icon(
+                      Icons.fingerprint,
+                      color: AppColors.primaryLight,
+                    ),
+                    title: const Text(
+                      'User ID (UID)',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
                     subtitle: Text(
                       firebaseUser?.uid ?? '-',
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14, fontFamily: 'monospace'),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                        fontFamily: 'monospace',
+                      ),
                     ),
                   ),
                   const Divider(color: AppColors.divider, height: 1),
                   ListTile(
-                    leading: const Icon(Icons.calendar_today, color: AppColors.primaryLight),
-                    title: const Text('Bergabung Sejak', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    leading: const Icon(
+                      Icons.calendar_today,
+                      color: AppColors.primaryLight,
+                    ),
+                    title: const Text(
+                      'Bergabung Sejak',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
                     subtitle: Text(
                       createdAtStr,
-                      style: const TextStyle(color: AppColors.textPrimary, fontSize: 14),
+                      style: const TextStyle(
+                        color: AppColors.textPrimary,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                   const Divider(color: AppColors.divider, height: 1),
                   ListTile(
-                    leading: const Icon(Icons.verified_user_outlined, color: AppColors.primaryLight),
-                    title: const Text('Status Autentikasi', style: TextStyle(color: AppColors.textSecondary, fontSize: 13)),
+                    leading: const Icon(
+                      Icons.verified_user_outlined,
+                      color: AppColors.primaryLight,
+                    ),
+                    title: const Text(
+                      'Status Autentikasi',
+                      style: TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
                     subtitle: const Text(
                       'Terverifikasi via Firebase Auth',
                       style: TextStyle(color: AppColors.success, fontSize: 14),
@@ -221,35 +284,6 @@ class ProfileScreen extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Informasi Proyek & Identitas Kelompok (Persiapan UTS)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: AppColors.surface,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: AppColors.divider),
-              ),
-              child: const Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Identitas Pengembang Modul',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  SizedBox(height: 8),
-                  Text(
-                    'Nama: Melani Astuti\nNIM: 2411500036\nTugas: Authentication & Fondasi Aplikasi\nKelompok: TA5J (UTS Pemrograman Multi Platform)',
-                    style: TextStyle(fontSize: 12, color: AppColors.textSecondary, height: 1.5),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 28),
 
             // Tombol Logout
             SizedBox(
