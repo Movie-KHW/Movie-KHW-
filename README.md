@@ -11,7 +11,7 @@ Sesuai ketentuan baku lembar soal UTS:
 
 | No | Nama Mahasiswa | NIM | Peran / Tanggung Jawab Baku |
 |:--:|:---|:---:|:---|
-| 1 | **Melani Astuti** | **2411500036** | **Auth + navigasi + struktur folder** |
+| 1 | Melani Astuti | 2411500036 | Auth + navigasi + struktur folder |
 | 2 | Duwi Galu Gandimi | 2411500010 | Firestore CRUD + Model/Service/Provider + ViewState |
 | 3 | Fathurrahman Safari Lubis | 2411500025 | Dio REST API + loading/error/empty + Future vs Stream |
 | 4 | Hanin Fadhilah | 2411500033 | Moderasi admin + integrasi + keamanan + pengujian |
@@ -55,9 +55,13 @@ Sesuai ketentuan baku lembar soal UTS:
    - Status awal cerita wajib `pending`.
 
 3. **Modul TMDB API & Favorit (Fathurrahman Safari Lubis - 2411500025)**:
-   - Katalog film horor TMDB menggunakan Dio.
-   - Pencarian film dan detail film.
-   - Simpan & kelola daftar film favorit ke Firestore (`favorites`).
+   - Integrasi REST API TMDB menggunakan `Dio` dengan endpoint `/discover/movie?with_genres=27`, `/movie/{movie_id}`, dan `/search/movie`.
+   - Pola ViewState (Loading, Loaded, Error, Empty) pada `MovieProvider`.
+   - Model `MovieModel` dengan safe parsing JSON, penanganan poster, rating, dan tahun rilis.
+   - Layar Katalog Film Horor, Pencarian Film, dan Layar Detail Film sinematik.
+   - Fitur Film Favorit ke Cloud Firestore koleksi `favorites` dengan ID dokumen deterministik `{uid}_{movieId}`.
+   - `FavoriteProvider` dengan realtime stream listener, penanganan toggle favorit, dan pencegahan memory leak (`dispose()`).
+   - Penanganan komprehensif DioException (timeout, koneksi, status error 401/404/429/500).
 
 4. **Modul Moderasi Admin & Integrasi (Hanin Fadhilah - 2411500033)**:
    - Panel moderasi admin (`pending` -> `published` / `rejected`).
@@ -87,7 +91,13 @@ flutterfire configure --project=<FIREBASE_PROJECT_ID>
 ```
 *Catatan: Pastikan `DefaultFirebaseOptions.currentPlatform` di `lib/main.dart` telah dihubungkan.*
 
-### 3. Mengunduh Dependensi & Menjalankan Aplikasi
+### 3. Konfigurasi TMDB API
+Aplikasi sudah dikonfigurasi dengan kunci bawaan yang siap pakai untuk pengujian. Anda juga dapat menyertakan API Key TMDB milik sendiri saat menjalankan aplikasi:
+```bash
+flutter run --dart-define=TMDB_API_KEY=<API_KEY_ANDA>
+```
+
+### 4. Mengunduh Dependensi & Menjalankan Aplikasi
 ```bash
 # Unduh paket dependensi
 flutter pub get
@@ -107,7 +117,7 @@ flutter run
 ## 🧪 Hasil Pengujian (Unit & Static Analysis)
 
 - **Flutter Analyze**: `No issues found! (0 errors, 0 warnings)`
-- **Flutter Test**: `All 6 unit tests passed!` (Validasi formulir dan pengujian serialisasi `UserModel`).
+- **Flutter Test**: `All 22 unit tests passed!` (6 pengujian Auth & User, 7 pengujian Story & Storage, 9 pengujian TMDB Movie & Favorites).
 
 ---
 
