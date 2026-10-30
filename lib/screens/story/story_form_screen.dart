@@ -1,12 +1,10 @@
 // ===== IMPORT LIBRARY =====
 import 'package:flutter/material.dart';
-import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import '../../models/story_model.dart';
 import '../../providers/auth_provider.dart';
 import '../../providers/story_provider.dart';
 import '../../utils/app_constants.dart';
-import '../../widgets/image_picker_field.dart';
 
 // ===== FORMULIR TAMBAH & EDIT CERITA =====
 class StoryFormScreen extends StatefulWidget {
@@ -26,8 +24,6 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
   late final TextEditingController _locationController;
 
   String _selectedCategory = 'Pengalaman Pribadi';
-  XFile? _selectedImageFile;
-  bool _removeExistingImage = false;
 
   final List<String> _categoryOptions = [
     'Pengalaman Pribadi',
@@ -113,6 +109,16 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
     final authorId = firebaseUser.uid;
     final authorName =
         currentUser?.displayName ?? firebaseUser.displayName ?? 'Pengguna KHW';
+    final existingStory = widget.storyToEdit;
+    if (existingStory != null && !existingStory.isPending) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Cerita yang sudah ditinjau admin tidak dapat diedit.'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
+    }
 
     bool success;
 
@@ -126,12 +132,6 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
         content: _contentController.text,
         category: _selectedCategory,
         location: _locationController.text,
-        newImageFile: _selectedImageFile,
-        removeCurrentImage: _removeExistingImage,
-        existingImageUrl: _removeExistingImage ? null : existingStory.imageUrl,
-        existingImagePath: _removeExistingImage
-            ? null
-            : existingStory.imagePath,
       );
     } else {
       // ===== MENAMBAHKAN CERITA =====
@@ -140,7 +140,6 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
         content: _contentController.text,
         category: _selectedCategory,
         location: _locationController.text,
-        imageFile: _selectedImageFile,
         authorId: authorId,
         authorName: authorName,
       );
@@ -154,7 +153,7 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
           content: Text(
             storyProvider.actionSuccessMessage ??
                 (isEditMode
-                    ? 'Cerita berhasil diajukan ulang!'
+                ? 'Perubahan cerita berhasil disimpan.'
                     : 'Cerita berhasil dikirim! Menunggu moderasi.'),
           ),
           backgroundColor: AppColors.success,
@@ -178,15 +177,47 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
   @override
   Widget build(BuildContext context) {
     final existingStory = widget.storyToEdit;
-    final isRejected = existingStory?.isRejected ?? false;
+    if (existingStory != null && !existingStory.isPending) {
+      return Scaffold(
+        backgroundColor: AppColors.background,
+        appBar: AppBar(
+          title: const Text('Cerita Sudah Ditinjau'),
+          backgroundColor: AppColors.surface,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const Icon(
+                  Icons.lock_outline,
+                  color: AppColors.warning,
+                  size: 48,
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'Cerita yang sudah disetujui atau ditolak admin tidak dapat diedit.',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: AppColors.textSecondary),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Kembali'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
-          isEditMode
-              ? (isRejected ? 'Perbaiki & Ajukan Ulang' : 'Edit Cerita')
-              : 'Tulis Cerita Horor',
+          isEditMode ? 'Edit Cerita' : 'Tulis Cerita Horor',
         ),
         backgroundColor: AppColors.surface,
       ),
@@ -197,61 +228,6 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Banner Alasan Penolakan (khusus cerita yang ditolak)
-              if (isRejected && existingStory?.moderationNote != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: AppColors.error.withValues(alpha: 0.15),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: AppColors.error.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Row(
-                        children: [
-                          Icon(
-                            Icons.warning_amber_rounded,
-                            color: AppColors.error,
-                            size: 20,
-                          ),
-                          SizedBox(width: 8),
-                          Text(
-                            'Cerita Ditolak Oleh Admin',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              color: AppColors.error,
-                              fontSize: 14,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Catatan admin: "${existingStory!.moderationNote}"',
-                        style: const TextStyle(
-                          color: AppColors.textPrimary,
-                          fontSize: 13,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      const Text(
-                        'Silakan sesuaikan isi cerita Anda sesuai catatan di atas, kemudian simpan untuk mengajukan kembali ke moderasi.',
-                        style: TextStyle(
-                          color: AppColors.textSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-              ],
-
               // Banner Informasi Moderasi
               Container(
                 padding: const EdgeInsets.all(12),
@@ -391,28 +367,7 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               ),
               const SizedBox(height: 14),
 
-              // 4. Foto Sampul Cerita (Firebase Storage)
-              ImagePickerField(
-                selectedFile: _selectedImageFile,
-                existingImageUrl: _removeExistingImage
-                    ? null
-                    : existingStory?.imageUrl,
-                onImageSelected: (file) {
-                  setState(() {
-                    _selectedImageFile = file;
-                    _removeExistingImage = false;
-                  });
-                },
-                onImageRemoved: () {
-                  setState(() {
-                    _selectedImageFile = null;
-                    _removeExistingImage = true;
-                  });
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // 5. Isi Cerita Horor
+              // Isi Cerita Horor
               const Text(
                 'Isi Kisah Horor',
                 style: TextStyle(
@@ -448,7 +403,7 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
               ),
               const SizedBox(height: 28),
 
-              // Tombol Kirim / Ajukan Ulang
+              // Tombol Kirim atau Simpan
               SizedBox(
                 width: double.infinity,
                 child: Consumer<StoryProvider>(
@@ -476,9 +431,7 @@ class _StoryFormScreenState extends State<StoryFormScreen> {
                         isLoading
                             ? 'Menyimpan cerita...'
                             : isEditMode
-                            ? (isRejected
-                                  ? 'Ajukan Ulang Cerita'
-                                  : 'Simpan Perubahan')
+                            ? 'Simpan Perubahan'
                             : 'Kirim Cerita ke Admin',
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
