@@ -223,6 +223,42 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
         children: [
           // Filter Status Moderasi
           _buildStatusFilterChips(storyProvider),
+          if (storyProvider.isStoryImageUploading)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Row(
+                children: [
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      color: AppColors.primaryLight,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Cerita sudah tersimpan. Mengunggah foto '
+                      '${(storyProvider.storyImageUploadProgress * 100).round()}% '
+                      'di latar belakang.',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          if (storyProvider.storyImageUploadError != null)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
+              child: Text(
+                storyProvider.storyImageUploadError!,
+                style: const TextStyle(color: AppColors.error, fontSize: 12),
+              ),
+            ),
           const Divider(color: AppColors.divider, height: 1),
 
           // Daftar Cerita Milik Pengguna
