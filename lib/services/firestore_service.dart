@@ -66,7 +66,7 @@ class FirestoreService {
     try {
       final querySnapshot = await _storiesCollection
           .where('authorId', isEqualTo: uid)
-          .get();
+          .get(const GetOptions(source: Source.server));
 
       final list = querySnapshot.docs
           .map((doc) => StoryModel.fromFirestore(doc))
@@ -111,8 +111,6 @@ class FirestoreService {
     required String content,
     required String category,
     String? location,
-    String? imageUrl,
-    String? imagePath,
     required String authorId,
     required String authorName,
   }) async {
@@ -128,8 +126,6 @@ class FirestoreService {
         content: content.trim(),
         category: category.trim(),
         location: location?.trim().isNotEmpty == true ? location!.trim() : null,
-        imageUrl: imageUrl,
-        imagePath: imagePath,
         authorId: authorId,
         authorName: authorName.trim(),
         status: AppConstants.statusPending, // Aturan: cerita baru wajib pending
@@ -149,7 +145,7 @@ class FirestoreService {
 
   // ===== MEMPERBARUI CERITA =====
   // Memperbarui cerita oleh penulisnya
-  // Cerita yang diedit (termasuk rejected) otomatis berstatus 'pending' kembali untuk diajukan ulang
+  // Hanya cerita pending yang dapat diedit sebelum ditinjau admin.
   Future<void> updateStory({
     required String storyId,
     required String authorId,
@@ -157,11 +153,11 @@ class FirestoreService {
     required String content,
     required String category,
     String? location,
-    String? imageUrl,
-    String? imagePath,
   }) async {
     try {
-      final doc = await _storiesCollection.doc(storyId).get();
+      final doc = await _storiesCollection
+          .doc(storyId)
+          .get(const GetOptions(source: Source.server));
       if (!doc.exists) {
         throw Exception('Cerita tidak ditemukan.');
       }
@@ -173,6 +169,11 @@ class FirestoreService {
           'Akses ditolak: Anda tidak memiliki izin untuk mengedit cerita ini.',
         );
       }
+      if (existingData['status'] != AppConstants.statusPending) {
+        throw Exception(
+          'Cerita yang sudah ditinjau admin tidak dapat diedit.',
+        );
+      }
 
       final updateData = <String, dynamic>{
         'title': title.trim(),
@@ -181,8 +182,6 @@ class FirestoreService {
         'location': location?.trim().isNotEmpty == true
             ? location!.trim()
             : null,
-        'imageUrl': imageUrl,
-        'imagePath': imagePath,
         'status': AppConstants.statusPending, // Reset ke pending saat diedit
         'moderationNote':
             null, // Bersihkan catatan penolakan lama saat diajukan ulang
@@ -195,38 +194,6 @@ class FirestoreService {
     }
   }
 
-  Future<void> updateStoryImage({
-    required String storyId,
-    required String authorId,
-    required String imageUrl,
-    required String imagePath,
-  }) async {
-    try {
-      final storyRef = _storiesCollection.doc(storyId);
-      final doc = await storyRef.get();
-      if (!doc.exists) {
-        throw Exception('Cerita tidak ditemukan.');
-      }
-
-      final data = doc.data()!;
-      if (data['authorId'] != authorId) {
-        throw Exception(
-          'Akses ditolak: Anda tidak memiliki izin untuk mengubah foto cerita ini.',
-        );
-      }
-      if (data['imageUrl'] != null || data['imagePath'] != null) {
-        throw Exception('Foto cerita ini sudah pernah diunggah.');
-      }
-
-      await storyRef.update({
-        'imageUrl': imageUrl,
-        'imagePath': imagePath,
-      });
-    } catch (e) {
-      throw Exception('Gagal menyimpan foto cerita: $e');
-    }
-  }
-
   // ===== MENGHAPUS CERITA =====
   // Menghapus cerita dari Firestore dengan verifikasi hak milik
   Future<void> deleteStory({
@@ -235,12 +202,19 @@ class FirestoreService {
     bool isAdmin = false,
   }) async {
     try {
-      final doc = await _storiesCollection.doc(storyId).get();
+      final doc = await _storiesCollection
+          .doc(storyId)
+          .get(const GetOptions(source: Source.server));
       if (!doc.exists) {
         return; // Dokumen sudah tidak ada
       }
 
       final existingData = doc.data()!;
+      if (existingData['status'] != AppConstants.statusPending) {
+        throw Exception(
+          'Cerita yang sudah ditinjau admin tidak dapat dihapus.',
+        );
+      }
       if (!isAdmin && existingData['authorId'] != authorId) {
         throw Exception(
           'Akses ditolak: Anda tidak memiliki izin untuk menghapus cerita ini.',
