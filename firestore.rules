@@ -1,0 +1,150 @@
+rules_version = '2';
+
+service cloud.firestore {
+match /databases/{database}/documents {
+
+
+function isAuthenticated() {
+  return request.auth != null;
+}
+
+function isOwner(uid) {
+  return isAuthenticated() && request.auth.uid == uid;
+}
+
+function isAdmin() {
+  return isAuthenticated()
+    && exists(
+      /databases/$(database)/documents/users/$(request.auth.uid)
+    )
+    && get(
+      /databases/$(database)/documents/users/$(request.auth.uid)
+    ).data.role == 'admin';
+}
+
+match /users/{uid} {
+
+  allow read: if isOwner(uid) || isAdmin();
+
+  allow create: if isOwner(uid)
+    && request.resource.data.keys().hasAll([
+      'displayName',
+      'email',
+      'role',
+      'createdAt'
+    ])
+    && request.resource.data.keys().hasOnly([
+      'displayName',
+      'email',
+      'role',
+      'createdAt'
+    ])
+    && request.resource.data.role == 'user'
+    && request.resource.data.email == request.auth.token.email
+    && request.resource.data.displayName is string
+    && request.resource.data.createdAt is timestamp;
+
+  allow update: if isOwner(uid)
+    && request.resource.data.diff(resource.data)
+      .affectedKeys().hasOnly(['displayName'])
+    && request.resource.data.displayName is string;
+
+  allow delete: if false;
+}
+
+
+match /stories/{storyId} {
+
+  allow read: if resource.data.status == 'published'
+    || (
+      isAuthenticated()
+      && resource.data.authorId == request.auth.uid
+    )
+    || isAdmin();
+
+  allow create: if isAuthenticated()
+    && request.resource.data.keys().hasAll([
+      'title',
+      'content',
+      'category',
+      'authorId',
+      'authorName',
+      'status',
+      'createdAt'
+    ])
+    && request.resource.data.keys().hasOnly([
+      'title',
+      'content',
+      'category',
+      'location',
+      'imageUrl',
+      'imagePath',
+      'authorId',
+      'authorName',
+      'status',
+      'moderationNote',
+      'createdAt',
+      'updatedAt',
+      'reviewedBy',
+      'reviewedAt'
+    ])
+    && request.resource.data.authorId == request.auth.uid
+    && request.resource.data.status == 'pending'
+    && request.resource.data.title is string
+    && request.resource.data.content is string
+    && request.resource.data.category is string
+    && request.resource.data.authorName is string
+    && request.resource.data.createdAt is timestamp;
+
+  allow update: if (
+    isAuthenticated()
+    && resource.data.authorId == request.auth.uid
+    && request.resource.data.authorId == resource.data.authorId
+    && request.resource.data.diff(resource.data)
+      .affectedKeys().hasOnly([
+        'title',
+        'content',
+        'category',
+        'location',
+        'imageUrl',
+        'imagePath',
+        'status',
+        'moderationNote',
+        'updatedAt'
+      ])
+    && request.resource.data.status == 'pending'
+    && request.resource.data.moderationNote == null
+    && request.resource.data.updatedAt is timestamp
+  ) || (
+    isAdmin()
+    && request.resource.data.diff(resource.data)
+      .affectedKeys().hasOnly([
+        'status',
+        'moderationNote',
+        'reviewedBy',
+        'reviewedAt',
+        'updatedAt'
+      ])
+    && request.resource.data.status in [
+      'pending',
+      'published',
+      'rejected'
+    ]
+    && request.resource.data.reviewedBy == request.auth.uid
+    && request.resource.data.reviewedAt is timestamp
+    && request.resource.data.updatedAt is timestamp
+  );
+
+  allow delete: if (
+    isAuthenticated()
+    && resource.data.authorId == request.auth.uid
+  ) || isAdmin();
+}
+
+
+match /favorites/{uid}/movies/{movieId} {
+  allow read, write: if isOwner(uid);
+}
+
+}
+}
