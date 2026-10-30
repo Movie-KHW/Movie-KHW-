@@ -26,7 +26,10 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       final uid = auth.firebaseUser?.uid;
       if (uid != null && uid.isNotEmpty) {
-        Provider.of<StoryProvider>(context, listen: false).initUserStoriesStream(uid);
+        Provider.of<StoryProvider>(
+          context,
+          listen: false,
+        ).initUserStoriesStream(uid);
       }
     });
   }
@@ -42,7 +45,10 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
             children: [
               Icon(Icons.delete_forever, color: AppColors.error),
               SizedBox(width: 8),
-              Text('Hapus Cerita?', style: TextStyle(color: AppColors.textPrimary)),
+              Text(
+                'Hapus Cerita?',
+                style: TextStyle(color: AppColors.textPrimary),
+              ),
             ],
           ),
           content: Text(
@@ -52,7 +58,10 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(dialogContext),
-              child: const Text('Batal', style: TextStyle(color: AppColors.textSecondary)),
+              child: const Text(
+                'Batal',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
             ),
             Consumer<StoryProvider>(
               builder: (context, provider, _) {
@@ -64,7 +73,10 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
                   onPressed: provider.isActionLoading
                       ? null
                       : () async {
-                          final auth = Provider.of<AuthProvider>(context, listen: false);
+                          final auth = Provider.of<AuthProvider>(
+                            context,
+                            listen: false,
+                          );
                           final success = await provider.deleteStory(
                             storyId: story.id,
                             authorId: auth.firebaseUser?.uid ?? '',
@@ -84,7 +96,10 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
                             } else {
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text(provider.errorMessage ?? 'Gagal menghapus cerita.'),
+                                  content: Text(
+                                    provider.errorMessage ??
+                                        'Gagal menghapus cerita.',
+                                  ),
                                   backgroundColor: AppColors.error,
                                 ),
                               );
@@ -95,7 +110,10 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
                       ? const SizedBox(
                           width: 16,
                           height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.white,
+                          ),
                         )
                       : const Text('Hapus'),
                 );
@@ -110,10 +128,26 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
   // ===== MEMBANGUN FILTER STATUS =====
   Widget _buildStatusFilterChips(StoryProvider provider) {
     final filters = [
-      {'label': 'Semua', 'value': 'Semua', 'count': provider.userStories.length},
-      {'label': 'Menunggu', 'value': AppConstants.statusPending, 'count': provider.userPendingCount},
-      {'label': 'Diterbitkan', 'value': AppConstants.statusPublished, 'count': provider.userPublishedCount},
-      {'label': 'Ditolak', 'value': AppConstants.statusRejected, 'count': provider.userRejectedCount},
+      {
+        'label': 'Semua',
+        'value': 'Semua',
+        'count': provider.userStories.length,
+      },
+      {
+        'label': 'Menunggu',
+        'value': AppConstants.statusPending,
+        'count': provider.userPendingCount,
+      },
+      {
+        'label': 'Diterbitkan',
+        'value': AppConstants.statusPublished,
+        'count': provider.userPublishedCount,
+      },
+      {
+        'label': 'Ditolak',
+        'value': AppConstants.statusRejected,
+        'count': provider.userRejectedCount,
+      },
     ];
 
     return SizedBox(
@@ -127,7 +161,8 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
           final item = filters[index];
           final val = item['value'] as String;
           final count = item['count'] as int;
-          final isSelected = provider.selectedUserStatus.toLowerCase() == val.toLowerCase();
+          final isSelected =
+              provider.selectedUserStatus.toLowerCase() == val.toLowerCase();
 
           return ChoiceChip(
             label: Text('${item['label']} ($count)'),
@@ -142,7 +177,9 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
             labelStyle: TextStyle(
               fontSize: 12,
               fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? AppColors.textPrimary : AppColors.textSecondary,
+              color: isSelected
+                  ? AppColors.textPrimary
+                  : AppColors.textSecondary,
             ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(20),
@@ -176,9 +213,7 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
             onPressed: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => const StoryFormScreen(),
-                ),
+                MaterialPageRoute(builder: (_) => const StoryFormScreen()),
               );
             },
           ),
@@ -199,8 +234,11 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
               child: Builder(
                 builder: (context) {
                   // 1. Loading State
-                  if (storyProvider.isLoading && storyProvider.userStories.isEmpty) {
-                    return const LoadingStateView(message: 'Memuat cerita Anda...');
+                  if (storyProvider.isLoadingUserStories &&
+                      storyProvider.userStories.isEmpty) {
+                    return const LoadingStateView(
+                      message: 'Memuat cerita Anda...',
+                    );
                   }
 
                   // 2. Empty State
@@ -247,7 +285,8 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => StoryFormScreen(storyToEdit: story),
+                              builder: (_) =>
+                                  StoryFormScreen(storyToEdit: story),
                             ),
                           );
                         },
@@ -270,9 +309,7 @@ class _MyStoriesScreenState extends State<MyStoriesScreen> {
         onPressed: () {
           Navigator.push(
             context,
-            MaterialPageRoute(
-              builder: (_) => const StoryFormScreen(),
-            ),
+            MaterialPageRoute(builder: (_) => const StoryFormScreen()),
           );
         },
       ),
