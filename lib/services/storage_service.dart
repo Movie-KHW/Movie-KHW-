@@ -15,20 +15,18 @@ class StorageService {
   // Ekstensi file yang didukung
   static const List<String> allowedExtensions = ['jpg', 'jpeg', 'png', 'webp'];
 
-  StorageService({
-    FirebaseStorage? storage,
-    ImagePicker? picker,
-  })  : _storage = storage ?? FirebaseStorage.instance,
-        _picker = picker ?? ImagePicker();
+  StorageService({FirebaseStorage? storage, ImagePicker? picker})
+    : _storage = storage ?? FirebaseStorage.instance,
+      _picker = picker ?? ImagePicker();
 
   // ===== MEMILIH FOTO DARI GALERI =====
   Future<XFile?> pickImageFromGallery() async {
     try {
       final pickedFile = await _picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: 1280,
+        maxHeight: 720,
+        imageQuality: 70,
       );
       return pickedFile;
     } catch (e) {
@@ -41,9 +39,9 @@ class StorageService {
     try {
       final pickedFile = await _picker.pickImage(
         source: ImageSource.camera,
-        maxWidth: 1920,
-        maxHeight: 1080,
-        imageQuality: 85,
+        maxWidth: 1280,
+        maxHeight: 720,
+        imageQuality: 70,
       );
       return pickedFile;
     } catch (e) {
@@ -117,12 +115,11 @@ class StorageService {
       final snapshot = await uploadTask;
       final downloadUrl = await snapshot.ref.getDownloadURL();
 
-      return {
-        'imageUrl': downloadUrl,
-        'imagePath': storagePath,
-      };
+      return {'imageUrl': downloadUrl, 'imagePath': storagePath};
     } on FirebaseException catch (e) {
-      throw Exception('Gagal mengunggah foto ke Cloud Storage: ${e.message ?? e.code}');
+      throw Exception(
+        'Gagal mengunggah foto ke Cloud Storage: ${e.message ?? e.code}',
+      );
     } catch (e) {
       throw Exception('Terjadi kesalahan saat upload foto: $e');
     }
@@ -141,10 +138,14 @@ class StorageService {
     } on FirebaseException catch (e) {
       // Jika file memang sudah tidak ada (object-not-found), abaikan tanpa melempar error
       if (e.code == 'object-not-found') {
-        debugPrint('Foto di storage tidak ditemukan (sudah terhapus): $imagePath');
+        debugPrint(
+          'Foto di storage tidak ditemukan (sudah terhapus): $imagePath',
+        );
         return;
       }
-      debugPrint('Peringatan: Gagal menghapus foto lama dari Storage: ${e.message}');
+      debugPrint(
+        'Peringatan: Gagal menghapus foto lama dari Storage: ${e.message}',
+      );
     } catch (e) {
       debugPrint('Kesalahan menghapus foto storage: $e');
     }
