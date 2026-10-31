@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../utils/app_constants.dart';
-import 'admin/admin_dashboard_screen.dart';
+import 'moderation/moderation_screen.dart';
 import 'movies/movie_list_screen.dart';
 import 'profile_screen.dart';
 import 'story/story_list_screen.dart';
@@ -224,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     final pages = isAdmin
         ? const [
-            AdminDashboardScreen(),
+            ModerationScreen(),
             StoryListScreen(),
             MovieListScreen(),
             ProfileScreen(),
