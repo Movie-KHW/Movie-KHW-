@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import 'providers/auth_provider.dart';
 import 'providers/favorite_provider.dart';
+import 'providers/moderation_provider.dart';
 import 'providers/movie_provider.dart';
 import 'providers/story_provider.dart';
 import 'screens/auth/login_screen.dart';
@@ -52,7 +53,9 @@ class KHWMovieApp extends StatelessWidget {
         ),
 
         // Provider Anggota 4 (Hanin Fadhilah - 2411500033): Moderasi Admin
-        // ChangeNotifierProvider<ModerationProvider>(create: (_) => ModerationProvider()),
+        ChangeNotifierProvider<ModerationProvider>(
+          create: (_) => ModerationProvider(),
+        ),
       ],
       child: MaterialApp(
         title: AppConstants.appName,
