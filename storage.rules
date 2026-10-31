@@ -1,0 +1,59 @@
+rules_version = '2';
+
+// ===== ATURAN KEAMANAN FIREBASE STORAGE =====
+// Proyek: KHW Movie — Horror Stories & Movie Discovery
+// Penanggung Jawab Keamanan: Hanin Fadhilah (2411500033)
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // ===== FUNGSI OTENTIKASI DAN KEAMANAN =====
+
+    // Memeriksa apakah pengguna telah masuk (terautentikasi)
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    // Memeriksa apakah pengguna adalah pemilik folder / berkas
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
+
+    // Memeriksa format konten berupa citra gambar (JPEG, PNG, WebP)
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+
+    // Membatasi ukuran berkas maksimum sebesar 5 Megabytes (MB)
+    function isWithinSizeLimit() {
+      return request.resource.size <= 5 * 1024 * 1024;
+    }
+
+    // ===== DIREKTORI FOTO CERITA HOROR =====
+    // Pola path terstruktur: story_images/{uid}/{storyId}/{fileName}
+    match /story_images/{uid}/{storyId}/{fileName} {
+      // Membaca foto: Diizinkan publik agar foto pada cerita yang terbit dapat dimuat di UI
+      allow read: if true;
+
+      // Mengunggah atau memperbarui foto:
+      // Hanya pemilik akun, wajib bertipe citra gambar, dan ukuran maksimal 5MB
+      allow write: if isOwner(uid) && isImage() && isWithinSizeLimit();
+
+      // Menghapus foto: Hanya pemilik foto yang dapat menghapus berkas miliknya
+      allow delete: if isOwner(uid);
+    }
+
+    // Pola path sekunder: story_images/{uid}/{fileName}
+    match /story_images/{uid}/{fileName} {
+      allow read: if true;
+      allow write: if isOwner(uid) && isImage() && isWithinSizeLimit();
+      allow delete: if isOwner(uid);
+    }
+
+    // ===== BLOKIR AKSES TIDAK SAH =====
+    // Mencegah akses tulis dan hapus tanpa izin pada direktori selain story_images
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
