@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../providers/auth_provider.dart';
 import '../../utils/app_constants.dart';
+import 'moderation/moderation_screen.dart';
 
 // ===== TAMPILAN PROFIL PENGGUNA =====
 class ProfileScreen extends StatelessWidget {
@@ -280,6 +281,40 @@ class ProfileScreen extends StatelessWidget {
                       style: TextStyle(color: AppColors.success, fontSize: 14),
                     ),
                   ),
+                  if (isAdmin) ...[
+                    const Divider(color: AppColors.divider, height: 1),
+                    ListTile(
+                      leading: const Icon(
+                        Icons.admin_panel_settings,
+                        color: AppColors.accent,
+                      ),
+                      title: const Text(
+                        'Panel Moderasi Cerita',
+                        style: TextStyle(
+                          color: AppColors.accent,
+                          fontSize: 14,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      subtitle: const Text(
+                        'Kelola dan tinjau cerita pending dari komunitas',
+                        style: TextStyle(color: AppColors.textSecondary, fontSize: 12),
+                      ),
+                      trailing: const Icon(
+                        Icons.arrow_forward_ios,
+                        size: 14,
+                        color: AppColors.accent,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const ModerationScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
                 ],
               ),
             ),
