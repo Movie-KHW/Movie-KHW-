@@ -1,157 +1,171 @@
 rules_version = '2';
 
+// ===== ATURAN KEAMANAN CLOUD FIRESTORE =====
+// Proyek: KHW Movie — Horror Stories & Movie Discovery
+// Penanggung Jawab Keamanan: Hanin Fadhilah (2411500033)
+
 service cloud.firestore {
-match /databases/{database}/documents {
+  match /databases/{database}/documents {
 
+    // ===== FUNGSI OTENTIKASI DAN ROLE =====
 
-function isAuthenticated() {
-  return request.auth != null;
-}
+    // Memeriksa apakah pengguna telah terautentikasi via Firebase Auth
+    function isAuthenticated() {
+      return request.auth != null;
+    }
 
-function isOwner(uid) {
-  return isAuthenticated() && request.auth.uid == uid;
-}
+    // Memeriksa kepemilikan dokumen berdasarkan UID pengguna
+    function isOwner(uid) {
+      return isAuthenticated() && request.auth.uid == uid;
+    }
 
-function isAdmin() {
-  return isAuthenticated()
-    && exists(
-      /databases/$(database)/documents/users/$(request.auth.uid)
-    )
-    && get(
-      /databases/$(database)/documents/users/$(request.auth.uid)
-    ).data.role == 'admin';
-}
+    // Memeriksa apakah pengguna memiliki hak akses role 'admin' di Firestore
+    function isAdmin() {
+      return isAuthenticated()
+        && exists(/databases/$(database)/documents/users/$(request.auth.uid))
+        && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
 
-match /users/{uid} {
+    // ===== KOLEKSI PENGGUNA (users/{uid}) =====
+    // Pengguna hanya dapat membaca profil miliknya atau admin dapat membaca untuk audit
+    // Mencegah eskalasi role: Pengguna baru wajib role 'user' dan tidak bisa mengubah role sendiri
+    match /users/{uid} {
+      // Membaca profil: hanya pemilik akun atau admin
+      allow read: if isOwner(uid) || isAdmin();
 
-  allow read: if isOwner(uid) || isAdmin();
+      // Registrasi akun: role wajib dipaksa 'user', dilarang mendaftar langsung sebagai 'admin'
+      allow create: if isOwner(uid)
+        && request.resource.data.keys().hasAll(['displayName', 'email', 'role', 'createdAt'])
+        && request.resource.data.keys().hasOnly(['displayName', 'email', 'role', 'createdAt'])
+        && request.resource.data.role == 'user'
+        && request.resource.data.email == request.auth.token.email
+        && request.resource.data.displayName is string
+        && request.resource.data.createdAt is timestamp;
 
-  allow create: if isOwner(uid)
-    && request.resource.data.keys().hasAll([
-      'displayName',
-      'email',
-      'role',
-      'createdAt'
-    ])
-    && request.resource.data.keys().hasOnly([
-      'displayName',
-      'email',
-      'role',
-      'createdAt'
-    ])
-    && request.resource.data.role == 'user'
-    && request.resource.data.email == request.auth.token.email
-    && request.resource.data.displayName is string
-    && request.resource.data.createdAt is timestamp;
+      // Edit profil: hanya boleh mengubah displayName, tidak boleh mengubah role, email, atau createdAt
+      allow update: if isOwner(uid)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['displayName'])
+        && request.resource.data.displayName is string;
 
-  allow update: if isOwner(uid)
-    && request.resource.data.diff(resource.data)
-      .affectedKeys().hasOnly(['displayName'])
-    && request.resource.data.displayName is string;
+      // Penghapusan dokumen akun dilarang langsung dari aplikasi klien
+      allow delete: if false;
+    }
 
-  allow delete: if false;
-}
+    // ===== KOLEKSI CERITA HOROR (stories/{storyId}) =====
+    // Aturan publikasi & moderasi:
+    // - Cerita 'published' dapat dibaca oleh publik/semua pengguna.
+    // - Cerita baru wajib berstatus 'pending'.
+    // - Pengguna tidak dapat menerbitkan ceritanya sendiri atau memanipulasi field moderasi.
+    // - Hanya admin tepercaya yang berhak mengubah status menjadi 'published' atau 'rejected'.
+    match /stories/{storyId} {
+      // Membaca cerita: Publik boleh membaca cerita published; Penulis boleh membaca ceritanya; Admin boleh membaca semua
+      allow read: if resource.data.status == 'published'
+        || (isAuthenticated() && resource.data.authorId == request.auth.uid)
+        || isAdmin();
 
+      // Menulis cerita baru: Wajib berstatus 'pending' dan authorId sesuai UID yang login
+      allow create: if isAuthenticated()
+        && request.resource.data.keys().hasAll([
+          'title',
+          'content',
+          'category',
+          'authorId',
+          'authorName',
+          'status',
+          'createdAt'
+        ])
+        && request.resource.data.keys().hasOnly([
+          'title',
+          'content',
+          'category',
+          'location',
+          'imageUrl',
+          'imagePath',
+          'authorId',
+          'authorName',
+          'status',
+          'moderationNote',
+          'createdAt',
+          'updatedAt',
+          'reviewedBy',
+          'reviewedAt'
+        ])
+        && request.resource.data.authorId == request.auth.uid
+        && request.resource.data.status == 'pending'
+        && request.resource.data.moderationNote == null
+        && request.resource.data.reviewedBy == null
+        && request.resource.data.reviewedAt == null
+        && request.resource.data.title is string
+        && request.resource.data.content is string
+        && request.resource.data.category is string
+        && request.resource.data.authorName is string
+        && request.resource.data.createdAt is timestamp;
 
-match /stories/{storyId} {
-
-  allow read: if resource.data.status == 'published'
-    || (
-      isAuthenticated()
-      && resource.data.authorId == request.auth.uid
-    )
-    || isAdmin();
-
-  allow create: if isAuthenticated()
-    && request.resource.data.keys().hasAll([
-      'title',
-      'content',
-      'category',
-      'authorId',
-      'authorName',
-      'status',
-      'createdAt'
-    ])
-    && request.resource.data.keys().hasOnly([
-      'title',
-      'content',
-      'category',
-      'location',
-      'authorId',
-      'authorName',
-      'status',
-      'moderationNote',
-      'createdAt',
-      'updatedAt',
-      'reviewedBy',
-      'reviewedAt'
-    ])
-    && request.resource.data.authorId == request.auth.uid
-    && request.resource.data.status == 'pending'
-    && request.resource.data.title is string
-    && request.resource.data.content is string
-    && request.resource.data.category is string
-    && request.resource.data.authorName is string
-    && request.resource.data.createdAt is timestamp;
-
-  allow update: if (
-    isAuthenticated()
-    && resource.data.authorId == request.auth.uid
-    && resource.data.status == 'pending'
-    && request.resource.data.authorId == resource.data.authorId
-    && request.resource.data.diff(resource.data)
-      .affectedKeys().hasOnly([
-        'title',
-        'content',
-        'category',
-        'location',
-        'status',
-        'moderationNote',
-        'updatedAt'
-      ])
-    && request.resource.data.status == 'pending'
-    && request.resource.data.moderationNote == null
-    && request.resource.data.updatedAt is timestamp
-  ) || (
-    isAdmin()
-    && resource.data.status == 'pending'
-    && request.resource.data.diff(resource.data)
-      .affectedKeys().hasOnly([
-        'status',
-        'moderationNote',
-        'reviewedBy',
-        'reviewedAt',
-        'updatedAt'
-      ])
-    && request.resource.data.status in [
-      'published',
-      'rejected'
-    ]
-    && request.resource.data.reviewedBy == request.auth.uid
-    && request.resource.data.reviewedAt is timestamp
-    && request.resource.data.updatedAt is timestamp
-  );
-
-  allow delete: if resource.data.status == 'pending'
-    && (
-      (
+      // Pembaruan cerita:
+      // Jalur A (Penulis): Hanya boleh mengedit cerita miliknya jika status masih 'pending'
+      // Jalur B (Admin Moderasi): Menyetujui atau menolak cerita 'pending'
+      allow update: if (
+        // Jalur A: Penulis mengedit cerita pending miliknya sendiri
         isAuthenticated()
         && resource.data.authorId == request.auth.uid
-      ) || isAdmin()
-    );
-}
+        && resource.data.status == 'pending'
+        && request.resource.data.authorId == resource.data.authorId
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'title',
+          'content',
+          'category',
+          'location',
+          'imageUrl',
+          'imagePath',
+          'status',
+          'moderationNote',
+          'updatedAt'
+        ])
+        && request.resource.data.status == 'pending'
+        && request.resource.data.moderationNote == null
+        && request.resource.data.updatedAt is timestamp
+      ) || (
+        // Jalur B: Admin menyetujui (published) atau menolak (rejected) cerita
+        isAdmin()
+        && resource.data.status == 'pending'
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'status',
+          'moderationNote',
+          'reviewedBy',
+          'reviewedAt',
+          'updatedAt'
+        ])
+        && request.resource.data.status in ['published', 'rejected']
+        && request.resource.data.reviewedBy == request.auth.uid
+        && request.resource.data.reviewedAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && (
+          request.resource.data.status != 'rejected'
+          || (request.resource.data.moderationNote is string && request.resource.data.moderationNote.size() > 0)
+        )
+      );
 
+      // Menghapus cerita: Hanya boleh jika status masih 'pending' oleh penulis asli atau admin
+      allow delete: if resource.data.status == 'pending'
+        && (
+          (isAuthenticated() && resource.data.authorId == request.auth.uid)
+          || isAdmin()
+        );
+    }
 
-match /favorites/{uid}/movies/{movieId} {
-  allow read, write: if isOwner(uid);
-}
+    // ===== KOLEKSI FAVORIT FILM =====
+    // Koleksi favorites deterministik {uid}_{movieId} (Anggota 3: Fathurrahman Safari Lubis)
+    match /favorites/{favoriteId} {
+      allow read: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+      allow delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
+      allow update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
+    }
 
-// Koleksi favorites deterministik {uid}_{movieId} (Anggota 3: Fathurrahman Safari Lubis)
-match /favorites/{favoriteId} {
-  allow read, delete: if isAuthenticated() && resource.data.userId == request.auth.uid;
-  allow create: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-  allow update: if isAuthenticated() && request.resource.data.userId == request.auth.uid;
-}
+    // Subkoleksi favorites pendukung
+    match /favorites/{uid}/movies/{movieId} {
+      allow read, write: if isOwner(uid);
+    }
 
-}
+  }
 }
